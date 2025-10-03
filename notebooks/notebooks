@@ -1,1 +1,206 @@
+# 📓 RLHF Notebook
+This notebook demonstrates a minimal RLHF loop using a small LLM (like GPT-2) and simulated preference data, guiding you through loading, fine-tuning, reward modeling, and policy optimization. It is designed to tell the story of RLHF in an educational yet practical way, highlighting key steps, explanations, and real-world considerations.
 
+---
+
+## 1. Introduction & Setup
+
+**Markdown Explanation:**
+
+> This notebook demonstrates a minimal RLHF loop with fake preference data. We simulate human preferences to teach a small LLM how to align with human-like responses.
+
+**Python Setup:**
+
+```python
+import torch
+import random
+import numpy as np
+from transformers import AutoModelForCausalLM, AutoTokenizer
+
+# Set random seeds for reproducibility
+random.seed(42)
+numpy.random.seed(42)
+torch.manual_seed(42)
+```
+
+* **Why:** Ensures consistent results every time you run the notebook.
+* **Libraries:** `torch` for modeling, `transformers` for pretrained LLMs, `numpy` and `random` for consistent data handling.
+
+---
+
+## 2. Load Base Model
+
+**Markdown Explanation:**
+
+> We load a small pretrained model (GPT-2) as our starting point. It knows language but doesn’t know human preferences yet.
+
+**Python Code:**
+
+```python
+tok = AutoTokenizer.from_pretrained("gpt2")
+policy = AutoModelForCausalLM.from_pretrained("gpt2")
+```
+
+* **Why:** The base LLM is our “student” that will be gradually taught to align with human preferences.
+* **Tip:** For real experiments, consider LLaMA, Falcon, or other larger models for better performance.
+
+---
+
+## 3. Supervised Fine-Tuning (SFT)
+
+**Markdown Explanation:**
+
+> We warm-start the model with examples of helpful answers. This step ensures the LLM has a foundation of high-quality responses before RLHF.
+
+**Python Outline:**
+
+```python
+# Example: fine-tune on a tiny dataset
+sft_dataset = [{"prompt": "What is AI?", "response": "AI stands for Artificial Intelligence and it simulates human intelligence."}]
+# Define DataLoader, optimizer, and train loop here
+```
+
+* **Why:** SFT provides an initial bias towards human-like, safe, and coherent answers.
+* **Tip:** In real projects, use large human-written datasets like StackExchange, Wikipedia Q&A, or curated help documents.
+
+---
+
+## 4. Generate Candidate Answers
+
+**Markdown Explanation:**
+
+> We generate multiple answers for the same prompt. These will later be scored by humans or the reward model.
+
+**Python Example:**
+
+```python
+prompt = "Explain quantum computing in simple terms."
+inputs = tok(prompt, return_tensors="pt")
+outputs = [policy.generate(**inputs, max_length=50) for _ in range(3)]
+candidate_answers = [tok.decode(out[0], skip_special_tokens=True) for out in outputs]
+print(candidate_answers)
+```
+
+* **Why:** Generating multiple responses allows comparison, ranking, and preference modeling.
+* **Tip:** Use temperature and top-k/top-p sampling to produce diverse outputs.
+
+---
+
+## 5. Preference Data
+
+**Markdown Explanation:**
+
+> In real life, humans provide this data by choosing the best answer. Here we simulate it with a tiny dataset.
+
+**Python Example:**
+
+```python
+prefs = [
+    {"prompt": "What is quantum computing?",
+     "chosen": "Quantum computing uses qubits and superposition.",
+     "rejected": "Quantum computing is magic."}
+]
+```
+
+* **Why:** Preference pairs are the foundation of the reward model training.
+* **Tip:** Collect a diverse set covering multiple domains to ensure broad LLM alignment.
+
+---
+
+## 6. Reward Model Training
+
+**Markdown Explanation:**
+
+> The reward model learns to score answers like a human would. It predicts which answer in a pair is better.
+
+**Python Outline:**
+
+```python
+import torch.nn as nn
+class RewardModel(nn.Module):
+    def __init__(self, hidden_size=768):
+        super().__init__()
+        self.head = nn.Linear(hidden_size, 1)
+    def forward(self, hidden_states):
+        return self.head(hidden_states.mean(dim=1))
+
+# Train on preference pairs using pairwise loss
+```
+
+* **Why:** Automates preference scoring so you don’t need humans for every iteration.
+* **Tip:** Use margin ranking loss or logistic pairwise loss to train effectively.
+
+---
+
+## 7. RL Optimization (PPO or DPO)
+
+**Markdown Explanation:**
+
+> Now we update the policy so it generates more preferred answers using reinforcement learning.
+
+**Python Outline:**
+
+```python
+# PPO/DPO update pseudocode
+for batch in generated_batches:
+    rewards = reward_model(batch)
+    # PPO: compute advantage, update policy with clipped objective
+    # DPO: maximize probability of preferred responses
+```
+
+* **Why:** This is the core RLHF step — aligning the LLM to human preferences.
+* **Tip:** Start small with toy examples, then scale to larger datasets and models.
+
+---
+
+## 8. Evaluation
+
+**Markdown Explanation:**
+
+> Compare model outputs before and after RLHF. Observe how the LLM shifts toward human-aligned behavior.
+
+**Python Example:**
+
+```python
+pre_train_output = policy.generate(**inputs, max_length=50)
+# After RLHF training
+post_train_output = policy.generate(**inputs, max_length=50)
+print("Before:", tok.decode(pre_train_output[0]))
+print("After:", tok.decode(post_train_output[0]))
+```
+
+* **Why:** Evaluation ensures the RLHF loop is producing meaningful improvement.
+* **Tip:** Use both automated metrics (reward model scores, BLEU, ROUGE) and human evaluation.
+
+---
+
+## 9. Conclusion & Next Steps
+
+* Summarize the notebook achievements:
+
+  * Loaded a base LLM.
+  * Fine-tuned with supervised data.
+  * Generated candidates and created preference pairs.
+  * Trained a reward model.
+  * Optimized the policy with PPO/DPO.
+  * Evaluated improvements.
+
+* **Next Steps:**
+
+  * Scale up using larger datasets and real human feedback.
+  * Improve reward model with more sophisticated architectures.
+  * Monitor for safety, bias, and reward hacking.
+  * Deploy on GPUs/TPUs and optimize for batch processing.
+
+---
+
+**Summary Analogy:**
+Think of this notebook as teaching a student:
+
+1. Show good examples (SFT).
+2. Generate work to evaluate (candidate answers).
+3. Score them like a teacher (reward model).
+4. Guide the student to do better (PPO/DPO).
+5. Repeat until mastery (evaluation).
+
+The story of RLHF is about **iterative, preference-based learning** — a journey from a general LLM to a human-aligned AI.
