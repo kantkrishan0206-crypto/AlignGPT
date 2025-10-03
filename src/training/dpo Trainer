@@ -1,3 +1,40 @@
+"""
+src/training/dpo_trainer.py
+
+Direct Preference Optimization (DPO) trainer for RLHF pipelines.
+
+This script implements the DPO algorithm (S. Ziegler et al. / OpenAI style DPO) in a
+practical and extensible way so you can run experiments locally in VS Code.
+
+High-level idea:
+- Given preference pairs (prompt, chosen, rejected), DPO directly optimizes the model
+  so that the log-likelihood difference between chosen and rejected responses
+  matches/exceeds the same difference under a fixed reference policy.
+
+Objective (per pair) follows the DPO formulation:
+    kappa = log pi_ref(chosen | prompt) - log pi_ref(rejected | prompt)
+    s = (log pi_theta(chosen | prompt) - log pi_theta(rejected | prompt)) - kappa
+    loss = -log sigmoid(s)
+
+Where pi_ref is a frozen reference policy (often the pretrained model before fine-tuning)
+and pi_theta is the trainable policy model.
+
+Features implemented:
+- Config-driven via YAML or CLI args
+- Data loading with PrefPair JSONL
+- Uses PolicyModel wrapper for log-prob computation (sequence-level)
+- Reference policy snapshot support (from checkpoint or cloned at start)
+- Mixed precision (AMP), gradient accumulation, checkpointing
+- Optional PEFT/LoRA integration for parameter-efficient finetuning
+- Evaluation metrics: training loss, pairwise accuracy (policy prefers chosen over rejected), mean margin
+- Save/load trainer checkpoints (model, optimizer, scaler, meta)
+
+Usage example (small scale):
+    python src/training/dpo_trainer.py --config configs/dpo_gpt2.yaml
+
+"""
+from __future__ import annotations
+
 import os
 import sys
 import json
