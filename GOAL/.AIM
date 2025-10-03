@@ -1,12 +1,6 @@
-<p align="center">
-  <img src="https://via.placeholder.com/600x150.png?text=RLHF+with+LLMs" alt="RLHF Banner" width="600"/>
-</p>
+# 🚀 RLHF (Reinforcement Learning from Human Feedback) for LLMs
 
-<h1 align="center">🚀 RLHF (Reinforcement Learning from Human Feedback) for LLMs</h1>
-
-<p align="center">
-  Train your base LLM (GPT, LLaMA, etc.) to behave helpfully, safely, and politely using human preferences!
-</p>
+Train your base LLM (GPT, LLaMA, etc.) to behave helpfully, safely, and politely using **human preferences**!
 
 ---
 
@@ -23,9 +17,9 @@ Instead, you train it using **human preferences**.
 <details>
 <summary>Step 1: Reward Model (The Judge) 🏆</summary>
 
-- Think of this as a **judge** for answers.
-- You give it **two answers** from the LLM to the same question.
-- Humans choose which answer is better.
+- Think of this as a **judge** for answers.  
+- You give it **two answers** from the LLM to the same question.  
+- Humans choose which answer is better.  
 - The reward model **learns to predict human preference automatically**.  
 
 **Analogy:**  
@@ -35,7 +29,7 @@ Instead, you train it using **human preferences**.
 <details>
 <summary>Step 2: Policy Optimization ⚙️</summary>
 
-- This is where the **LLM is actually trained**.
+- This is where the **LLM is actually trained**.  
 - The reward model gives feedback: “this answer is good/bad”.
 
 **Two common approaches:**
@@ -52,8 +46,8 @@ Instead, you train it using **human preferences**.
 <details>
 <summary>Step 3: Human-in-the-Loop 👥</summary>
 
-- Humans don’t need to rate millions of answers.
-- You can **simulate human feedback** in early experiments.
+- Humans don’t need to rate millions of answers.  
+- You can **simulate human feedback** in early experiments.  
 - Later, **real humans** provide more accurate feedback.
 </details>
 
@@ -66,10 +60,6 @@ Instead, you train it using **human preferences**.
 3. Reward model **scores each answer** (simulate human preference or use real humans).  
 4. Use **PPO/DPO** to update LLM to give better answers.  
 5. **Repeat** → LLM gradually aligns with human preferences.
-
-<p align="center">
-  <img src="https://via.placeholder.com/600x300.png?text=RLHF+Loop+Diagram" alt="RLHF Loop" width="600"/>
-</p>
 
 ---
 
@@ -116,7 +106,4 @@ Think of your AI as a **student**:
 
 ---
 
-<p align="center">
-  <b>Start teaching your AI to behave like humans want! 🚀</b>
-</p>
-
+**Start teaching your AI to behave like humans want! 🚀**
