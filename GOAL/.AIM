@@ -1,1 +1,69 @@
+## The goal
+You have a base LLM (like GPT or LLaMA).
+You want it to behave better, e.g., answer questions helpfully, politely, safely.
+Instead of just training it on huge text datasets, you train it using human preferences.
 
+---------
+
+## ✨ The main parts of RLHF
+
+There are three main steps:
+
+Step 1: Reward Model
+
+Think of this as a judge.
+You give it two answers (from the LLM) to the same question.
+Humans choose which answer is better.
+The reward model learns to predict human preference automatically.
+Analogy: You train a little robot to give scores to answers like a human would.
+
+---------
+
+## ✨ Policy Optimization
+
+This is where the actual LLM is trained.
+You use the reward model to give feedback (“this answer is good/bad”).
+Two common ways to do this:
+PPO (Proximal Policy Optimization)
+Makes small adjustments to the LLM’s behavior to maximize reward.
+Think: nudging the model gently toward better answers without breaking it.
+DPO (Direct Preference Optimization)
+Optimizes directly for human preferences.
+A simpler alternative to PPO, less tuning required.
+
+------------
+
+## ✨ Human-in-the-Loop
+Humans don’t need to rate millions of answers.
+You can simulate human feedback in early expeiments.
+Later, real humans can give more accurate feedback.
+
+
+-------------
+
+## The RLHF Loop
+
+Start with base LLM.
+Generate multiple answers for the same prompt.
+Reward model scores each answer (simulating human preference or using real humans).
+Use PPO/DPO to update LLM to give better answers.
+Repeat → LLM gets gradually aligned with human preferences.
+
+---------------
+
+
+## ✨ Compare fine-tuning algorithms
+
+You can try different approaches:
+Supervised Fine-Tuning (SFT): just train on human-written answers.
+RLHF with PPO: trains using reward scores.
+DPO: direct preference optimization.
+See which method makes the model behave more like humans want.
+
+
+## Analogy:
+Think of training a dog:
+SFT = show the dog the trick a few times.
+RLHF = give treats when the dog does the trick the way you like.
+PPO = adjust slowly so the dog learns gently.
+DPO = optimize directly for “best dog behavior” using treats.
