@@ -1,8 +1,53 @@
 llm-rlhf-project/
-├── data/
-├── scripts/
-├── models/
-├── utils/
-├── notebooks/
-├── requirements.txt
-└── README.md
+rlhf-lab/
+├─ README.md
+├─ LICENSE
+├─ docs/
+│  ├─ overview.md
+│  ├─ data_format.md
+│  ├─ reward_model.md
+│  ├─ ppo_dpo.md
+│  └─ eval_protocols.md
+├─ configs/
+│  ├─ sft_gpt2.yaml
+│  ├─ rm_gpt2.yaml
+│  ├─ ppo_gpt2.yaml
+│  └─ dpo_gpt2.yaml
+├─ data/
+│  ├─ prompts.jsonl
+│  ├─ pref_pairs.jsonl
+│  └─ sft.jsonl
+├─ src/
+│  ├─ models/
+│  │  ├─ policy.py
+│  │  ├─ reward.py
+│  │  └─ tokenizer.py
+│  ├─ training/
+│  │  ├─ sft_trainer.py
+│  │  ├─ rm_trainer.py
+│  │  ├─ ppo_trainer.py
+│  │  └─ dpo_trainer.py
+│  ├─ data/
+│  │  ├─ build_prompts.py
+│  │  ├─ generate_candidates.py
+│  │  └─ make_pref_pairs.py
+│  ├─ eval/
+│  │  ├─ metrics.py
+│  │  ├─ eval_human.py
+│  │  └─ eval_automatic.py
+│  └─ utils/
+│     ├─ logging.py
+│     ├─ checkpoints.py
+│     └─ seed.py
+├─ scripts/
+│  ├─ run_sft.sh
+│  ├─ run_rm.sh
+│  ├─ run_ppo.sh
+│  └─ run_dpo.sh
+├─ tests/
+│  ├─ test_data.py
+│  ├─ test_reward.py
+│  └─ test_trainers.py
+└─ environment.yml
+
+
