@@ -1,69 +1,122 @@
-## The goal
-You have a base LLM (like GPT or LLaMA).
-You want it to behave better, e.g., answer questions helpfully, politely, safely.
-Instead of just training it on huge text datasets, you train it using human preferences.
+<p align="center">
+  <img src="https://via.placeholder.com/600x150.png?text=RLHF+with+LLMs" alt="RLHF Banner" width="600"/>
+</p>
 
----------
+<h1 align="center">🚀 RLHF (Reinforcement Learning from Human Feedback) for LLMs</h1>
 
-## ✨ The main parts of RLHF
+<p align="center">
+  Train your base LLM (GPT, LLaMA, etc.) to behave helpfully, safely, and politely using human preferences!
+</p>
 
-There are three main steps:
+---
 
-Step 1: Reward Model
+## 🎯 The Goal
 
-Think of this as a judge.
-You give it two answers (from the LLM) to the same question.
-Humans choose which answer is better.
-The reward model learns to predict human preference automatically.
-Analogy: You train a little robot to give scores to answers like a human would.
+You have a base LLM.  
+You want it to behave better without just training on huge text datasets.  
+Instead, you train it using **human preferences**.  
 
----------
+---
 
-## ✨ Policy Optimization
+## ✨ Main Parts of RLHF
 
-This is where the actual LLM is trained.
-You use the reward model to give feedback (“this answer is good/bad”).
-Two common ways to do this:
-PPO (Proximal Policy Optimization)
-Makes small adjustments to the LLM’s behavior to maximize reward.
-Think: nudging the model gently toward better answers without breaking it.
-DPO (Direct Preference Optimization)
-Optimizes directly for human preferences.
-A simpler alternative to PPO, less tuning required.
+<details>
+<summary>Step 1: Reward Model (The Judge) 🏆</summary>
 
-------------
+- Think of this as a **judge** for answers.
+- You give it **two answers** from the LLM to the same question.
+- Humans choose which answer is better.
+- The reward model **learns to predict human preference automatically**.  
 
-## ✨ Human-in-the-Loop
-Humans don’t need to rate millions of answers.
-You can simulate human feedback in early expeiments.
-Later, real humans can give more accurate feedback.
+**Analogy:**  
+> You train a little robot to give scores to answers like a human would.
+</details>
 
+<details>
+<summary>Step 2: Policy Optimization ⚙️</summary>
 
--------------
+- This is where the **LLM is actually trained**.
+- The reward model gives feedback: “this answer is good/bad”.
 
-## The RLHF Loop
+**Two common approaches:**
 
-Start with base LLM.
-Generate multiple answers for the same prompt.
-Reward model scores each answer (simulating human preference or using real humans).
-Use PPO/DPO to update LLM to give better answers.
-Repeat → LLM gets gradually aligned with human preferences.
+1. **PPO (Proximal Policy Optimization)**  
+   - Makes **small adjustments** to the LLM’s behavior to maximize reward.  
+   - Think: *nudging the model gently toward better answers without breaking it.*
 
----------------
+2. **DPO (Direct Preference Optimization)**  
+   - Optimizes **directly for human preferences**.  
+   - A **simpler alternative** to PPO with less tuning required.
+</details>
 
+<details>
+<summary>Step 3: Human-in-the-Loop 👥</summary>
 
-## ✨ Compare fine-tuning algorithms
+- Humans don’t need to rate millions of answers.
+- You can **simulate human feedback** in early experiments.
+- Later, **real humans** provide more accurate feedback.
+</details>
 
-You can try different approaches:
-Supervised Fine-Tuning (SFT): just train on human-written answers.
-RLHF with PPO: trains using reward scores.
-DPO: direct preference optimization.
-See which method makes the model behave more like humans want.
+---
 
+## 🔄 The RLHF Loop
 
-## Analogy:
-Think of training a dog:
-SFT = show the dog the trick a few times.
-RLHF = give treats when the dog does the trick the way you like.
-PPO = adjust slowly so the dog learns gently.
-DPO = optimize directly for “best dog behavior” using treats.
+1. Start with a **base LLM**.  
+2. Generate **multiple answers** for the same prompt.  
+3. Reward model **scores each answer** (simulate human preference or use real humans).  
+4. Use **PPO/DPO** to update LLM to give better answers.  
+5. **Repeat** → LLM gradually aligns with human preferences.
+
+<p align="center">
+  <img src="https://via.placeholder.com/600x300.png?text=RLHF+Loop+Diagram" alt="RLHF Loop" width="600"/>
+</p>
+
+---
+
+## 🔍 Compare Fine-Tuning Algorithms
+
+| Method | Description |
+|--------|------------|
+| **SFT** (Supervised Fine-Tuning) | Train on human-written answers only. |
+| **RLHF + PPO** | Train using reward scores from the reward model. |
+| **DPO** | Directly optimize for human preferences. |
+
+> Test which method makes your model behave **more like humans want**.
+
+---
+
+## 🧠 RLHF = Teaching a Model to Do What Humans Like
+
+Think of your AI as a **student**:
+
+1. **Reward Model (The Judge)**  
+   - AI writes answers.  
+   - Humans say which is better.  
+   - Reward model learns: *“This kind of answer is good, that kind is bad.”*
+
+2. **Train the AI (Policy Optimization)**  
+   - AI tries to give answers that get **high scores from the judge**.  
+   - PPO = *slow nudging to improve.*  
+   - DPO = *directly teach AI to pick better answers.*
+
+3. **Loop**  
+   - AI writes → Judge scores → AI updates → Repeat.  
+   - Over time, AI learns to give answers **humans like most**.
+
+---
+
+## 🐶 Analogy: Training a Dog
+
+| Method | Analogy |
+|--------|--------|
+| SFT | Show the dog the trick a few times. |
+| RLHF | Give treats when the dog does the trick the way you like. |
+| PPO | Adjust slowly so the dog learns gently. |
+| DPO | Optimize directly for “best dog behavior” using treats. |
+
+---
+
+<p align="center">
+  <b>Start teaching your AI to behave like humans want! 🚀</b>
+</p>
+
