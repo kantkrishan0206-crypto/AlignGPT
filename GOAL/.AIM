@@ -1,21 +1,21 @@
-# 🚀 RLHF (Reinforcement Learning from Human Feedback) for LLMs
+# 🚀 **RLHF (Reinforcement Learning from Human Feedback) for LLMs**
 
 Train your base LLM (GPT, LLaMA, etc.) to behave helpfully, safely, and politely using **human preferences**.
 
 ---
 
-## 🎯 The Goal
+## 🎯 **The Goal**
 
-You have a base LLM.  
+You have a **base LLM**.  
 You want it to behave better without just training on huge text datasets.  
 Instead, you train it using **human preferences**.
 
 ---
 
-## ✨ Main Parts of RLHF
+## ✨ **Main Parts of RLHF**
 
 <details>
-<summary>Step 1: Reward Model (The Judge) 🏆</summary>
+<summary>**Step 1: Reward Model (The Judge) 🏆**</summary>
 
 - Think of this as a **judge** for answers.  
 - You give it **two answers** from the LLM to the same question.  
@@ -27,7 +27,7 @@ Instead, you train it using **human preferences**.
 </details>
 
 <details>
-<summary>Step 2: Policy Optimization ⚙️</summary>
+<summary>**Step 2: Policy Optimization ⚙️**</summary>
 
 - This is where the **LLM is trained**.  
 - The reward model gives feedback: “this answer is good/bad”.
@@ -44,7 +44,7 @@ Instead, you train it using **human preferences**.
 </details>
 
 <details>
-<summary>Step 3: Human-in-the-Loop 👥</summary>
+<summary>**Step 3: Human-in-the-Loop 👥**</summary>
 
 - Humans don’t need to rate millions of answers.  
 - You can **simulate human feedback** in early experiments.  
@@ -53,7 +53,7 @@ Instead, you train it using **human preferences**.
 
 ---
 
-## 🔄 The RLHF Loop
+## 🔄 **The RLHF Loop**
 
 1. Start with a **base LLM**.  
 2. Generate **multiple answers** for the same prompt.  
@@ -63,17 +63,17 @@ Instead, you train it using **human preferences**.
 
 ---
 
-## 🔍 Compare Fine-Tuning Algorithms
+## 🔍 **Compare Fine-Tuning Algorithms**
 
-| Method | Description |
-|--------|------------|
+| **Method** | **Description** |
+|------------|----------------|
 | **SFT** (Supervised Fine-Tuning) | Train on human-written answers only. |
 | **RLHF + PPO** | Train using reward scores from the reward model. |
 | **DPO** | Directly optimize for human preferences. |
 
 ---
 
-## 🧠 RLHF = Teaching a Model to Do What Humans Like
+## 🧠 **RLHF = Teaching a Model to Do What Humans Like**
 
 Think of your AI as a **student**:
 
@@ -93,10 +93,10 @@ Think of your AI as a **student**:
 
 ---
 
-## 🐶 Analogy: Training a Dog
+## 🐶 **Analogy: Training a Dog**
 
-| Method | Analogy |
-|--------|--------|
+| **Method** | **Analogy** |
+|------------|------------|
 | SFT | Show the dog the trick a few times. |
 | RLHF | Give treats when the dog does the trick the way you like. |
 | PPO | Adjust slowly so the dog learns gently. |
