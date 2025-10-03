@@ -1,6 +1,6 @@
 # 🚀 RLHF (Reinforcement Learning from Human Feedback) for LLMs
 
-Train your base LLM (GPT, LLaMA, etc.) to behave helpfully, safely, and politely using **human preferences**!
+Train your base LLM (GPT, LLaMA, etc.) to behave helpfully, safely, and politely using **human preferences**.
 
 ---
 
@@ -8,7 +8,7 @@ Train your base LLM (GPT, LLaMA, etc.) to behave helpfully, safely, and politely
 
 You have a base LLM.  
 You want it to behave better without just training on huge text datasets.  
-Instead, you train it using **human preferences**.  
+Instead, you train it using **human preferences**.
 
 ---
 
@@ -29,7 +29,7 @@ Instead, you train it using **human preferences**.
 <details>
 <summary>Step 2: Policy Optimization ⚙️</summary>
 
-- This is where the **LLM is actually trained**.  
+- This is where the **LLM is trained**.  
 - The reward model gives feedback: “this answer is good/bad”.
 
 **Two common approaches:**
@@ -70,8 +70,6 @@ Instead, you train it using **human preferences**.
 | **SFT** (Supervised Fine-Tuning) | Train on human-written answers only. |
 | **RLHF + PPO** | Train using reward scores from the reward model. |
 | **DPO** | Directly optimize for human preferences. |
-
-> Test which method makes your model behave **more like humans want**.
 
 ---
 
