@@ -1,181 +1,130 @@
-# 📓 RLHF Notebook Story — Interactive & Styled Version for GitHub
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RLHF Notebook Story</title>
+<style>
+    body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; background: #f9f9f9; color: #333; }
+    h1, h2, h3 { color: #1f3b6c; }
+    pre { background: #2d2d2d; color: #f8f8f2; padding: 10px; overflow-x: auto; border-radius: 5px; }
+    code { font-family: monospace; }
+    .tip { background: #e7f3ff; border-left: 4px solid #1f3b6c; padding: 10px; margin: 10px 0; }
+    .section { background: #fff; padding: 15px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    details { margin: 10px 0; padding: 10px; background: #f0f0f0; border-radius: 5px; }
+    summary { font-weight: bold; cursor: pointer; }
+    table { border-collapse: collapse; width: 100%; margin-top: 10px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+    th { background: #1f3b6c; color: white; }
+</style>
+</head>
+<body>
 
-This notebook demonstrates a minimal RLHF loop using GPT-2 and simulated preference data. To improve GitHub UI/UX, we include enhanced markdown styling, tables, callouts, and collapsible sections for readability.
+<h1>📓 RLHF Notebook Story — Interactive Guide</h1>
+<p>This interactive HTML version narrates a minimal RLHF loop using GPT-2 and simulated preference data. Learn step-by-step from loading a base model to PPO/DPO optimization with explanations, code, and tips.</p>
 
----
-
-## 1. Introduction & Setup
-
-> **Goal:** Teach a small LLM to generate human-preferred responses using a stepwise RLHF approach.
-
-```python
-import torch
+<div class="section">
+<h2>1. Introduction & Setup</h2>
+<p><strong>Goal:</strong> Teach a small LLM to generate human-preferred responses stepwise.</p>
+<pre><code>import torch
 import random
 import numpy as np
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-# Seeds for reproducibility
 random.seed(42)
-numpy.random.seed(42)
-torch.manual_seed(42)
-```
+np.random.seed(42)
+torch.manual_seed(42)</code></pre>
+<div class="tip">💡 Tip: Seeds make your experiments reproducible.</div>
+</div>
 
-**Notes:**
+<div class="section">
+<h2>2. Load Base Model</h2>
+<pre><code>tok = AutoTokenizer.from_pretrained("gpt2")
+policy = AutoModelForCausalLM.from_pretrained("gpt2")</code></pre>
+<div class="tip">💡 Tip: Base model is your student. Larger models generalize better.</div>
+</div>
 
-* Ensures consistent results.
-* Libraries: `torch`, `transformers`, `numpy`, `random`.
+<div class="section">
+<h2>3. Supervised Fine-Tuning (SFT)</h2>
+<p>Warm-start the model with high-quality Q&A pairs.</p>
+<pre><code>sft_dataset = [{"prompt": "What is AI?", "response": "AI simulates human intelligence through algorithms."}]
+# Implement DataLoader, optimizer, and train loop</code></pre>
+</div>
 
-<details>
-<summary>💡 Tip: Why seeds matter</summary>
-Random seeds make your experiments reproducible, so outputs are deterministic across runs.
-</details>
-
----
-
-## 2. Load Base Model
-
-```python
-tok = AutoTokenizer.from_pretrained("gpt2")
-policy = AutoModelForCausalLM.from_pretrained("gpt2")
-```
-
-* Base LLM is the “student.”
-* Consider larger models (LLaMA, Falcon) for serious experiments.
-
-<details>
-<summary>💡 Tip: Tokenizers</summary>
-Always use the matching tokenizer and model for consistency.
-</details>
-
----
-
-## 3. Supervised Fine-Tuning (SFT)
-
-```python
-sft_dataset = [{"prompt": "What is AI?", "response": "AI simulates human intelligence through algorithms."}]
-# Define DataLoader, optimizer, and train loop
-```
-
-* SFT biases model toward safe, helpful responses.
-* Use large datasets for better performance.
-
----
-
-## 4. Generate Candidate Answers
-
-```python
-prompt = "Explain quantum computing simply."
+<div class="section">
+<h2>4. Generate Candidate Answers</h2>
+<pre><code>prompt = "Explain quantum computing simply."
 inputs = tok(prompt, return_tensors="pt")
 outputs = [policy.generate(**inputs, max_length=50) for _ in range(3)]
 candidate_answers = [tok.decode(out[0], skip_special_tokens=True) for out in outputs]
-print(candidate_answers)
-```
-
-* Generate multiple responses to compare preferences.
-* Use stochastic sampling for diversity.
-
+print(candidate_answers)</code></pre>
 <details>
 <summary>💡 Tip: Sampling Strategies</summary>
-Temperature, top-k, and top-p sampling produce varied outputs instead of repetitive answers.
+<p>Use temperature, top-k, top-p sampling to produce diverse outputs.</p>
 </details>
+</div>
 
----
-
-## 5. Preference Data
-
-```python
-prefs = [
+<div class="section">
+<h2>5. Preference Data</h2>
+<pre><code>prefs = [
     {"prompt": "What is quantum computing?",
      "chosen": "Quantum computing uses qubits and superposition.",
      "rejected": "Quantum computing is magic."}
-]
-```
+]</code></pre>
+<div class="tip">💡 Tip: Curate diverse preference pairs for broad LLM alignment.</div>
+</div>
 
-* Foundation for reward model training.
-* Ensure diversity across domains.
-
----
-
-## 6. Reward Model Training
-
-```python
-import torch.nn as nn
+<div class="section">
+<h2>6. Reward Model Training</h2>
+<pre><code>import torch.nn as nn
 
 class RewardModel(nn.Module):
     def __init__(self, hidden_size=768):
         super().__init__()
         self.head = nn.Linear(hidden_size, 1)
     def forward(self, hidden_states):
-        return self.head(hidden_states.mean(dim=1))
+        return self.head(hidden_states.mean(dim=1))</code></pre>
+<details>
+<summary>💡 Tip</summary>
+<p>Train reward model using pairwise loss. Automates scoring to reduce human workload.</p>
+</details>
+</div>
 
-# Train on preference pairs using pairwise loss
-```
-
-* Reduces manual labeling workload.
-* Validate often to prevent misalignment.
-
----
-
-## 7. RL Optimization (PPO/DPO)
-
-```python
-for batch in generated_batches:
+<div class="section">
+<h2>7. RL Optimization (PPO/DPO)</h2>
+<pre><code>for batch in generated_batches:
     rewards = reward_model(batch)
-    # PPO: compute advantage, clipped surrogate objective
-    # DPO: maximize likelihood of preferred responses
-```
+    # PPO: compute advantage, apply clipped surrogate objective
+    # DPO: maximize likelihood of preferred responses</code></pre>
+<div class="tip">💡 Tip: Start with toy datasets. Clip updates and track entropy for stability.</div>
+</div>
 
-* Aligns model output with human preferences.
-* Start small, then scale.
-* Track entropy to maintain diversity.
-
----
-
-## 8. Evaluation
-
-```python
-pre_train_output = policy.generate(**inputs, max_length=50)
+<div class="section">
+<h2>8. Evaluation</h2>
+<pre><code>pre_train_output = policy.generate(**inputs, max_length=50)
 post_train_output = policy.generate(**inputs, max_length=50)
 print("Before:", tok.decode(pre_train_output[0]))
-print("After:", tok.decode(post_train_output[0]))
-```
+print("After:", tok.decode(post_train_output[0]))</code></pre>
+<div class="tip">💡 Tip: Combine automated metrics with human evaluation.</div>
+</div>
 
-* Metrics: reward model scores, BLEU/ROUGE, semantic similarity.
-* Combine automatic and human evaluation.
-
----
-
-## 9. Conclusion & Next Steps
-
-**Achievements:**
-
-| Step | Description                |
-| ---- | -------------------------- |
-| 1    | Loaded base LLM            |
-| 2    | Fine-tuned SFT             |
-| 3    | Generated candidates       |
-| 4    | Created preference pairs   |
-| 5    | Trained reward model       |
-| 6    | Optimized policy (PPO/DPO) |
-| 7    | Evaluated improvements     |
-
-**Next Steps:**
-
-* Scale to larger datasets & real human feedback.
-* Upgrade reward model architectures.
-* Monitor safety, fairness, and alignment.
-* Deploy efficiently on GPUs/TPUs.
-
-**Analogy:**
-Teaching a student:
-
-1. Show examples (SFT).
-2. Generate work (candidates).
-3. Score like a teacher (reward).
-4. Guide improvement (PPO/DPO).
-5. Repeat until mastery (evaluation).
-
+<div class="section">
+<h2>9. Conclusion & Next Steps</h2>
+<table>
+<tr><th>Step</th><th>Description</th></tr>
+<tr><td>1</td><td>Loaded base LLM</td></tr>
+<tr><td>2</td><td>Fine-tuned with supervised data</td></tr>
+<tr><td>3</td><td>Generated candidate responses</td></tr>
+<tr><td>4</td><td>Created preference pairs</td></tr>
+<tr><td>5</td><td>Trained reward model</td></tr>
+<tr><td>6</td><td>Optimized policy (PPO/DPO)</td></tr>
+<tr><td>7</td><td>Evaluated improvements</td></tr>
+</table>
 <details>
 <summary>💡 Key Insight</summary>
-RLHF is iterative, preference-based learning transforming a generic LLM into a human-aligned AI.
+<p>RLHF is iterative, preference-based learning that transforms a generic LLM into a human-aligned AI.</p>
 </details>
+</div>
+
+</body>
+</html>
