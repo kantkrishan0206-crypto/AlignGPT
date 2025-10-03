@@ -1,0 +1,388 @@
+import os
+import sys
+import json
+import time
+import math
+import logging
+import argparse
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional, Tuple
+
+import random
+import numpy as np
+import torch
+from torch import nn
+from torch.utils.data import Dataset, DataLoader
+from torch.optim import AdamW
+
+# allow running from project root
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+try:
+    from src.models.tokenizer import TokenizerWrapper, TokenizerConfig
+    from src.models.policy import PolicyModel, PolicyWrapperConfig
+    from src.models.reward import load_pref_pairs_from_jsonl
+except Exception:
+    from models.tokenizer import TokenizerWrapper, TokenizerConfig
+    from models.policy import PolicyModel, PolicyWrapperConfig
+    from models.reward import load_pref_pairs_from_jsonl
+
+logger = logging.getLogger(__name__)
+if not logger.handlers:
+    h = logging.StreamHandler()
+    h.setFormatter(logging.Formatter("%(asctime)s | %(levelname)s | %(message)s"))
+    logger.addHandler(h)
+logger.setLevel(logging.INFO)
+
+
+# ---------------------------
+# Config
+# ---------------------------
+
+@dataclass
+class DPOConfig:
+    model_name_or_path: str = "gpt2"
+    tokenizer_name_or_path: Optional[str] = None
+    reference_model_name_or_path: Optional[str] = None  # if None, clone initial model
+    train_file: str = "data/pref_pairs.jsonl"
+    val_file: Optional[str] = None
+
+    # training
+    out_dir: str = "./checkpoints/dpo"
+    per_device_train_batch_size: int = 4
+    gradient_accumulation_steps: int = 1
+    learning_rate: float = 2e-5
+    weight_decay: float = 0.0
+    adam_eps: float = 1e-8
+    num_train_epochs: int = 3
+    max_steps: Optional[int] = None
+    logging_steps: int = 50
+    save_steps: int = 500
+    eval_steps: int = 200
+
+    # device/mixed precision
+    device: str = "cuda" if torch.cuda.is_available() else "cpu"
+    fp16: bool = True
+
+    # PEFT
+    use_peft: bool = False
+    peft_config: Optional[Dict[str, Any]] = None
+
+    # misc
+    seed: int = 42
+    max_items: Optional[int] = None
+    local_files_only: bool = False
+
+
+# ---------------------------
+# Dataset
+# ---------------------------
+
+class PrefPairsDataset(Dataset):
+    """Loads JSONL with {prompt, chosen, rejected} lines.
+
+    This dataset returns raw strings; tokenization and batching are done in the trainer
+    to allow flexible batching strategies.
+    """
+
+    def __init__(self, path: str, max_items: Optional[int] = None):
+        self.samples = []
+        if not os.path.exists(path):
+            raise FileNotFoundError(f"Pref pairs file not found: {path}")
+        with open(path, "r", encoding="utf-8") as fh:
+            for i, line in enumerate(fh):
+                if max_items is not None and i >= max_items:
+                    break
+                line = line.strip()
+                if not line:
+                    continue
+                obj = json.loads(line)
+                if not all(k in obj for k in ("prompt", "chosen", "rejected")):
+                    continue
+                self.samples.append({"prompt": obj["prompt"], "chosen": obj["chosen"], "rejected": obj["rejected"]})
+        logger.info("Loaded %d preference pairs from %s", len(self.samples), path)
+
+    def __len__(self):
+        return len(self.samples)
+
+    def __getitem__(self, idx: int) -> Dict[str, str]:
+        return self.samples[idx]
+
+
+# ---------------------------
+# Metrics
+# ---------------------------
+
+def pairwise_accuracy(logp_chosen: List[float], logp_rejected: List[float]) -> float:
+    arr = np.array(logp_chosen) > np.array(logp_rejected)
+    return float(arr.mean()) if arr.size > 0 else 0.0
+
+
+def mean_margin(logp_chosen: List[float], logp_rejected: List[float]) -> float:
+    arr = np.array(logp_chosen) - np.array(logp_rejected)
+    return float(arr.mean()) if arr.size > 0 else 0.0
+
+
+# ---------------------------
+# Trainer
+# ---------------------------
+
+class DPOTrainer:
+    def __init__(self, policy: PolicyModel, reference: PolicyModel, tokenizer: TokenizerWrapper, cfg: DPOConfig):
+        self.policy = policy
+        self.reference = reference
+        self.tokenizer = tokenizer
+        self.cfg = cfg
+        self.device = torch.device(cfg.device)
+
+        # trainable parameters (policy.model parameters)
+        self.optimizer = AdamW([p for p in self.policy.model.parameters() if p.requires_grad], lr=cfg.learning_rate, weight_decay=cfg.weight_decay, eps=cfg.adam_eps)
+
+        # AMP scaler
+        self.use_amp = cfg.fp16 and self.device.type == "cuda"
+        self.scaler = torch.cuda.amp.GradScaler(enabled=self.use_amp)
+
+        # Move models to device
+        self.policy.model.to(self.device)
+        self.reference.model.to(self.device)
+        # put reference in eval mode and freeze
+        self.reference.model.eval()
+        for p in self.reference.model.parameters():
+            p.requires_grad = False
+
+        # bookkeeping
+        self.global_step = 0
+
+    def save_checkpoint(self, path: str):
+        os.makedirs(path, exist_ok=True)
+        # save policy
+        try:
+            self.policy.save(os.path.join(path, "policy"))
+        except Exception:
+            try:
+                self.policy.model.save_pretrained(os.path.join(path, "policy"))
+            except Exception as e:
+                logger.warning("Failed to save policy via HF API: %s", e)
+        # save optimizer & scaler
+        torch.save(self.optimizer.state_dict(), os.path.join(path, "optimizer.pt"))
+        if self.use_amp:
+            torch.save(self.scaler.state_dict(), os.path.join(path, "scaler.pt"))
+        meta = {"global_step": self.global_step, "cfg": self.cfg.__dict__}
+        with open(os.path.join(path, "meta.json"), "w") as fh:
+            json.dump(meta, fh)
+        logger.info("Saved DPO checkpoint to %s", path)
+
+    def load_checkpoint(self, path: str):
+        optp = os.path.join(path, "optimizer.pt")
+        if os.path.exists(optp):
+            st = torch.load(optp, map_location=self.device)
+            try:
+                self.optimizer.load_state_dict(st)
+                logger.info("Loaded optimizer state from %s", optp)
+            except Exception as e:
+                logger.warning("Failed to load optimizer state: %s", e)
+        if self.use_amp:
+            scp = os.path.join(path, "scaler.pt")
+            if os.path.exists(scp):
+                try:
+                    self.scaler.load_state_dict(torch.load(scp))
+                except Exception:
+                    pass
+
+    def _compute_logps_batch(self, model: PolicyModel, prompts: List[str], responses: List[str], batch_size: int = 8) -> List[float]:
+        # compute sequence log-probabilities using model.score in batches
+        logps: List[float] = []
+        model.model.eval()
+        with torch.no_grad():
+            for i in range(0, len(prompts), batch_size):
+                p_batch = prompts[i : i + batch_size]
+                r_batch = responses[i : i + batch_size]
+                out = model.score(p_batch, r_batch)
+                # model.score may return list or tensor
+                if isinstance(out, list) or isinstance(out, tuple):
+                    logps.extend([float(x) for x in out])
+                elif isinstance(out, torch.Tensor):
+                    logps.extend([float(x) for x in out.cpu().tolist()])
+                else:
+                    logps.append(float(out))
+        return logps
+
+    def train(self, train_dataset: PrefPairsDataset, val_dataset: Optional[PrefPairsDataset] = None):
+        # DataLoader yields raw pairs; we'll batch-tokenize and compute logprobs via model.score
+        dataloader = DataLoader(train_dataset, batch_size=self.cfg.per_device_train_batch_size, shuffle=True)
+        total_steps = self.cfg.max_steps or (len(dataloader) * self.cfg.num_train_epochs)
+        logger.info("Starting DPO training for %s steps (est).", total_steps)
+
+        for epoch in range(self.cfg.num_train_epochs):
+            for batch in dataloader:
+                prompts = [x['prompt'] for x in batch]
+                chos = [x['chosen'] for x in batch]
+                rejs = [x['rejected'] for x in batch]
+
+                # compute reference logprobs
+                logp_ref_chosen = self._compute_logps_batch(self.reference, prompts, chos, batch_size=16)
+                logp_ref_rejected = self._compute_logps_batch(self.reference, prompts, rejs, batch_size=16)
+
+                # compute policy logprobs (current)
+                # We'll compute within AMP context to allow grads
+                self.policy.model.train()
+                # compute scores (logpi_theta) with gradients
+                logp_theta_chosen = self.policy.score(prompts, chos)
+                logp_theta_rejected = self.policy.score(prompts, rejs)
+                # ensure python lists
+                if isinstance(logp_theta_chosen, torch.Tensor):
+                    logp_theta_chosen = [float(x) for x in logp_theta_chosen.cpu().tolist()]
+                if isinstance(logp_theta_rejected, torch.Tensor):
+                    logp_theta_rejected = [float(x) for x in logp_theta_rejected.cpu().tolist()]
+
+                # compute kappa and s = (logp_theta_c - logp_theta_r) - (logp_ref_c - logp_ref_r)
+                kappas = [rc - rr for rc, rr in zip(logp_ref_chosen, logp_ref_rejected)]
+                s_vals = [(tc - tr) - k for tc, tr, k in zip(logp_theta_chosen, logp_theta_rejected, kappas)]
+
+                # compute DPO loss: -log sigmoid(s) averaged
+                s_tensor = torch.tensor(s_vals, dtype=torch.float32, device=self.device)
+                loss = -torch.log(torch.sigmoid(s_tensor) + 1e-12).mean()
+
+                # backprop
+                loss = loss / max(1, self.cfg.gradient_accumulation_steps)
+                if self.use_amp:
+                    self.scaler.scale(loss).backward()
+                else:
+                    loss.backward()
+
+                if self.global_step % self.cfg.gradient_accumulation_steps == 0:
+                    if self.use_amp:
+                        self.scaler.unscale_(self.optimizer)
+                        torch.nn.utils.clip_grad_norm_(self.policy.model.parameters(), max_norm=1.0)
+                        self.scaler.step(self.optimizer)
+                        self.scaler.update()
+                    else:
+                        torch.nn.utils.clip_grad_norm_(self.policy.model.parameters(), max_norm=1.0)
+                        self.optimizer.step()
+                    self.optimizer.zero_grad()
+
+                # logging & eval bookkeeping
+                self.global_step += 1
+                if self.global_step % self.cfg.logging_steps == 0:
+                    acc = pairwise_accuracy(logp_theta_chosen, logp_theta_rejected)
+                    margin = mean_margin(logp_theta_chosen, logp_theta_rejected)
+                    logger.info("Step %d | loss %.6f | acc %.4f | margin %.4f", self.global_step, float(loss.item()), acc, margin)
+
+                if self.global_step % self.cfg.save_steps == 0:
+                    ckpt = os.path.join(self.cfg.out_dir, f"step_{self.global_step}")
+                    self.save_checkpoint(ckpt)
+
+                if self.cfg.max_steps is not None and self.global_step >= self.cfg.max_steps:
+                    break
+
+            # end epoch
+            if val_dataset is not None and (epoch + 1) % 1 == 0:
+                val_acc, val_margin, val_loss = self.evaluate(val_dataset)
+                logger.info("Epoch %d eval | val_loss %.6f | val_acc %.4f | val_margin %.4f", epoch, val_loss, val_acc, val_margin)
+
+            if self.cfg.max_steps is not None and self.global_step >= self.cfg.max_steps:
+                break
+
+        # final save
+        self.save_checkpoint(os.path.join(self.cfg.out_dir, "final"))
+        logger.info("DPO training complete. Final checkpoint saved.")
+
+    def evaluate(self, dataset: PrefPairsDataset) -> Tuple[float, float, float]:
+        # compute metrics on dataset: DPO loss, pairwise acc, mean margin
+        dataloader = DataLoader(dataset, batch_size=self.cfg.per_device_train_batch_size, shuffle=False)
+        losses = []
+        accs = []
+        margins = []
+        for batch in dataloader:
+            prompts = [x['prompt'] for x in batch]
+            chos = [x['chosen'] for x in batch]
+            rejs = [x['rejected'] for x in batch]
+
+            logp_ref_chosen = self._compute_logps_batch(self.reference, prompts, chos, batch_size=16)
+            logp_ref_rejected = self._compute_logps_batch(self.reference, prompts, rejs, batch_size=16)
+            logp_theta_chosen = self._compute_logps_batch(self.policy, prompts, chos, batch_size=16)
+            logp_theta_rejected = self._compute_logps_batch(self.policy, prompts, rejs, batch_size=16)
+
+            kappas = [rc - rr for rc, rr in zip(logp_ref_chosen, logp_ref_rejected)]
+            s_vals = [(tc - tr) - k for tc, tr, k in zip(logp_theta_chosen, logp_theta_rejected, kappas)]
+            s_tensor = torch.tensor(s_vals, dtype=torch.float32, device=self.device)
+            batch_loss = -torch.log(torch.sigmoid(s_tensor) + 1e-12).mean().item()
+            losses.append(batch_loss)
+            accs.append(pairwise_accuracy(logp_theta_chosen, logp_theta_rejected))
+            margins.append(mean_margin(logp_theta_chosen, logp_theta_rejected))
+
+        mean_loss = float(np.mean(losses)) if losses else 0.0
+        mean_acc = float(np.mean(accs)) if accs else 0.0
+        mean_margin_v = float(np.mean(margins)) if margins else 0.0
+        return mean_acc, mean_margin_v, mean_loss
+
+
+# ---------------------------
+# CLI & helpers
+# ---------------------------
+
+def parse_args():
+    p = argparse.ArgumentParser(description="DPO Trainer for RLHF lab")
+    p.add_argument("--config", type=str, default=None, help="Path to YAML config file")
+    p.add_argument("--train_file", type=str, default=None, help="Override train file")
+    p.add_argument("--val_file", type=str, default=None, help="Override val file")
+    p.add_argument("--out_dir", type=str, default=None, help="Override output dir")
+    p.add_argument("--local_files_only", action="store_true", help="Load HF models/tokenizers from local files only")
+    return p.parse_args()
+
+
+def load_config(path: Optional[str]) -> DPOConfig:
+    if path is None:
+        return DPOConfig()
+    import yaml
+    with open(path, "r") as fh:
+        raw = yaml.safe_load(fh) or {}
+    merged = {**DPOConfig().__dict__, **raw} if isinstance(raw, dict) else raw
+    return DPOConfig(**merged)
+
+
+def main():
+    args = parse_args()
+    cfg = load_config(args.config)
+    if args.train_file:
+        cfg.train_file = args.train_file
+    if args.val_file:
+        cfg.val_file = args.val_file
+    if args.out_dir:
+        cfg.out_dir = args.out_dir
+    os.makedirs(cfg.out_dir, exist_ok=True)
+
+    # seed
+    random.seed(cfg.seed)
+    np.random.seed(cfg.seed)
+    torch.manual_seed(cfg.seed)
+
+    # tokenizer
+    tok_cfg = TokenizerConfig(model_name_or_path=cfg.tokenizer_name_or_path or cfg.model_name_or_path)
+    tokenizer = TokenizerWrapper.from_pretrained(tok_cfg, local_files_only=cfg.local_files_only)
+
+    # policy model
+    policy_cfg = PolicyWrapperConfig(model_name_or_path=cfg.model_name_or_path)
+    policy = PolicyModel.from_pretrained(policy_cfg, local_files_only=cfg.local_files_only)
+
+    # reference model
+    if cfg.reference_model_name_or_path:
+        ref_cfg = PolicyWrapperConfig(model_name_or_path=cfg.reference_model_name_or_path)
+        reference = PolicyModel.from_pretrained(ref_cfg, local_files_only=cfg.local_files_only)
+    else:
+        # clone policy weights (create a frozen copy)
+        # We create a reference by loading the same checkpoint into a new PolicyModel
+        logger.info("Cloning reference policy from initial policy checkpoint")
+        ref_cfg = PolicyWrapperConfig(model_name_or_path=cfg.model_name_or_path)
+        reference = PolicyModel.from_pretrained(ref_cfg, local_files_only=cfg.local_files_only)
+
+    # datasets
+    train_ds = PrefPairsDataset(cfg.train_file, max_items=cfg.max_items)
+    val_ds = PrefPairsDataset(cfg.val_file) if cfg.val_file else None
+
+    trainer = DPOTrainer(policy=policy, reference=reference, tokenizer=tokenizer, cfg=cfg)
+    trainer.train(train_ds, val_dataset=val_ds)
+
+
+if __name__ == "__main__":
+    main()
