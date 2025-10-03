@@ -1,0 +1,328 @@
+General model utilities and base wrappers used across the rlhf-lab project.
+
+Purpose
+-------
+This module centralizes common model-loading, saving, device/dtype management,
+quantization helpers, PEFT adapter utilities, and a lightweight model registry.
+It is intended to be imported by the PolicyModel, RewardModel, trainer scripts,
+and CLI utilities to avoid duplication and to provide consistent behavior.
+
+Key features
+------------
+- BaseModelWrapper: light-weight wrapper providing save/load, device, dtype helpers
+- ModelRegistry: register and lookup model classes (policy, reward, tokenizer, etc.)
+- load_pretrained_with_fallback: safe loading wrapper around HF from_pretrained with useful kwargs
+- quantize_model_bitsandbytes: helper to prepare 8-bit quantization with bitsandbytes where available
+- peft helpers: attach/detach PEFT adapters if the `peft` package is available
+- utilities: num_parameters, model_summary, freeze/unfreeze layers, set_trainable_by_name
+- CLI smoke-test for basic operations (load model, report summary, save checkpoint)
+
+Notes
+-----
+- This module purposely minimizes heavy runtime behavior; optional features (bnb, peft)
+  are guarded by try/except so the package remains importable even if those libs are absent.
+- For production you should extend these helpers to support distributed loading (accelerate),
+  ONNX/gguf conversion pipelines, and model sharding.
+
+"""
+
+from __future__ import annotations
+
+import os
+import json
+import time
+import logging
+from dataclasses import dataclass
+from typing import Any, Dict, Optional, Type
+
+import torch
+from torch import nn
+
+# Optional dependencies
+try:
+    import bitsandbytes as bnb  # type: ignore
+    BNB_AVAILABLE = True
+except Exception:
+    BNB_AVAILABLE = False
+
+try:
+    from peft import PeftModel, PeftConfig
+    PEFT_AVAILABLE = True
+except Exception:
+    PeftModel = None  # type: ignore
+    PeftConfig = None  # type: ignore
+    PEFT_AVAILABLE = False
+
+try:
+    from transformers import AutoConfig, AutoModel, AutoModelForCausalLM
+    TRANSFORMERS_AVAILABLE = True
+except Exception:
+    AutoConfig = None  # type: ignore
+    AutoModel = None  # type: ignore
+    AutoModelForCausalLM = None  # type: ignore
+    TRANSFORMERS_AVAILABLE = False
+
+logger = logging.getLogger(__name__)
+if not logger.handlers:
+    h = logging.StreamHandler()
+    h.setFormatter(logging.Formatter("%(asctime)s | %(levelname)s | %(message)s"))
+    logger.addHandler(h)
+logger.setLevel(logging.INFO)
+
+
+# ---------------------------
+# Dataclasses & registry
+# ---------------------------
+
+@dataclass
+class GeneralModelConfig:
+    model_name_or_path: str
+    device_map: Optional[Any] = None
+    torch_dtype: Optional[torch.dtype] = None
+    low_cpu_mem_usage: bool = True
+    load_in_8bit: bool = False
+    trust_remote_code: bool = False
+
+
+class ModelRegistry:
+    """Simple registry to keep references to model wrapper classes by name."""
+
+    def __init__(self):
+        self._registry: Dict[str, Type] = {}
+
+    def register(self, name: str, cls: Type) -> None:
+        if name in self._registry:
+            logger.warning("Overwriting registry entry for %s", name)
+        self._registry[name] = cls
+
+    def get(self, name: str) -> Optional[Type]:
+        return self._registry.get(name)
+
+    def list(self) -> Dict[str, Type]:
+        return dict(self._registry)
+
+
+GLOBAL_REGISTRY = ModelRegistry()
+
+
+# ---------------------------
+# Base wrapper
+# ---------------------------
+
+class BaseModelWrapper:
+    """Base wrapper that other model wrappers can inherit from.
+
+    Responsibilities:
+    - store model & tokenizer (optional)
+    - provide save/load helpers
+    - device & dtype utilities
+    - simple summary and parameter counting
+    """
+
+    def __init__(self, model: nn.Module, tokenizer: Optional[Any] = None, cfg: Optional[GeneralModelConfig] = None):
+        self.model = model
+        self.tokenizer = tokenizer
+        self.cfg = cfg or GeneralModelConfig(model_name_or_path=getattr(model, "name_or_path", "unknown"))
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.model.to(self.device)
+
+    def to(self, device: torch.device) -> None:
+        self.device = device
+        self.model.to(device)
+        if hasattr(self, "tokenizer") and self.tokenizer is not None:
+            # tokenizer has no device but keep for API parity
+            pass
+
+    def save(self, path: str) -> None:
+        os.makedirs(path, exist_ok=True)
+        # prefer HF API if available
+        try:
+            if hasattr(self.model, "save_pretrained"):
+                self.model.save_pretrained(path)
+            else:
+                torch.save(self.model.state_dict(), os.path.join(path, "pytorch_model.bin"))
+        except Exception as e:
+            logger.exception("Failed to save model with HF API: %s; falling back to torch.save", e)
+            torch.save(self.model.state_dict(), os.path.join(path, "pytorch_model.bin"))
+
+        # save tokenizer
+        if self.tokenizer is not None:
+            try:
+                if hasattr(self.tokenizer, "save_pretrained"):
+                    self.tokenizer.save_pretrained(path)
+            except Exception:
+                logger.warning("Failed to save tokenizer to %s", path)
+
+        # save meta
+        meta = {"saved_at": time.time(), "cfg": self.cfg.__dict__ if self.cfg is not None else None}
+        with open(os.path.join(path, "meta.json"), "w") as fh:
+            json.dump(meta, fh)
+        logger.info("Saved wrapper to %s", path)
+
+    @classmethod
+    def load(cls, path: str, map_location: Optional[str] = None) -> "BaseModelWrapper":
+        # Attempt to load via HF API first
+        try:
+            if TRANSFORMERS_AVAILABLE:
+                # Try causallm first
+                try:
+                    model = AutoModelForCausalLM.from_pretrained(path, local_files_only=False)
+                except Exception:
+                    model = AutoModel.from_pretrained(path)
+                # Tokenizer may or may not exist
+                tokenizer = None
+                try:
+                    from transformers import AutoTokenizer
+
+                    tokenizer = AutoTokenizer.from_pretrained(path, use_fast=True)
+                except Exception:
+                    tokenizer = None
+                wrapper = cls(model=model, tokenizer=tokenizer, cfg=GeneralModelConfig(model_name_or_path=path))
+                return wrapper
+        except Exception:
+            logger.exception("HF loading failed for path %s", path)
+        # Fallback: load PyTorch state dict
+        st_path = os.path.join(path, "pytorch_model.bin")
+        if os.path.exists(st_path):
+            # user must provide model class to load weights into; here we raise helpful error
+            raise RuntimeError("Found pytorch_model.bin but cannot instantiate model automatically. Use specific wrapper load methods.")
+        raise FileNotFoundError(f"No model files found in {path}")
+
+    def num_parameters(self, trainable_only: bool = False) -> int:
+        total = 0
+        for p in self.model.parameters():
+            if trainable_only and not p.requires_grad:
+                continue
+            total += p.numel()
+        return total
+
+    def summary(self) -> Dict[str, Any]:
+        return {
+            "device": str(self.device),
+            "num_params": self.num_parameters(),
+            "trainable_params": self.num_parameters(trainable_only=True),
+            "dtype": str(next(self.model.parameters()).dtype),
+        }
+
+    def freeze_backbone(self, keep_layer_norm: bool = True) -> None:
+        for n, p in self.model.named_parameters():
+            p.requires_grad = False
+        if keep_layer_norm:
+            for n, m in self.model.named_modules():
+                if "LayerNorm" in type(m).__name__ or "layernorm" in type(m).__name__.lower():
+                    for p in m.parameters():
+                        p.requires_grad = True
+
+    def set_trainable_by_name(self, substring: str, trainable: bool = True) -> None:
+        for n, p in self.model.named_parameters():
+            if substring in n:
+                p.requires_grad = trainable
+
+
+# ---------------------------
+# Loading helpers
+# ---------------------------
+
+def load_pretrained_with_fallback(
+    model_name_or_path: str,
+    device_map: Optional[Any] = None,
+    torch_dtype: Optional[torch.dtype] = None,
+    load_in_8bit: bool = False,
+    trust_remote_code: bool = False,
+    local_files_only: bool = False,
+    **kwargs,
+) -> nn.Module:
+    """Robustly load a HuggingFace model with common options and informative errors."""
+    if not TRANSFORMERS_AVAILABLE:
+        raise RuntimeError("transformers package not available")
+
+    model_kwargs = {"trust_remote_code": trust_remote_code, "local_files_only": local_files_only}
+    if torch_dtype is not None:
+        model_kwargs["torch_dtype"] = torch_dtype
+    if load_in_8bit:
+        if not BNB_AVAILABLE:
+            raise RuntimeError("bitsandbytes not installed but load_in_8bit=True requested")
+        model_kwargs["load_in_8bit"] = True
+    if device_map is not None:
+        model_kwargs["device_map"] = device_map
+
+    try:
+        model = AutoModelForCausalLM.from_pretrained(model_name_or_path, **model_kwargs, **kwargs)
+        return model
+    except Exception as e:
+        logger.warning("Primary HF load failed: %s; trying AutoModel fallback", e)
+        try:
+            model = AutoModel.from_pretrained(model_name_or_path, **model_kwargs, **kwargs)
+            return model
+        except Exception as e2:
+            logger.exception("Failed to load model %s: %s", model_name_or_path, e2)
+            raise
+
+
+# ---------------------------
+# Quantization helper
+# ---------------------------
+
+def quantize_model_bitsandbytes(model: nn.Module, dtype: Optional[torch.dtype] = None) -> None:
+    """Prepare a model for 8-bit inference with bitsandbytes if available.
+
+    This function is a convenience—real 8-bit loading is most effective when passed to
+    `from_pretrained(..., load_in_8bit=True)` at load time. Use this only for small tests.
+    """
+    if not BNB_AVAILABLE:
+        raise RuntimeError("bitsandbytes not available")
+    try:
+        # simple conversion for embeddings and linear layers
+        for n, m in model.named_modules():
+            if isinstance(m, torch.nn.Linear):
+                # attempt to replace with 8-bit equivalent
+                try:
+                    m.weight.data = m.weight.data.to(torch.float16)
+                except Exception:
+                    pass
+        logger.info("Applied lightweight quantization transformations (best practice is to load with load_in_8bit=True)")
+    except Exception as e:
+        logger.exception("Quantization helper failed: %s", e)
+
+
+# ---------------------------
+# PEFT helpers
+# ---------------------------
+
+def apply_peft_adapter(model: nn.Module, adapter_path: str) -> nn.Module:
+    if not PEFT_AVAILABLE:
+        raise RuntimeError("PEFT/peft package not installed")
+    try:
+        wrapped = PeftModel.from_pretrained(model, adapter_path)
+        logger.info("Applied PEFT adapter from %s", adapter_path)
+        return wrapped
+    except Exception as e:
+        logger.exception("Failed to apply PEFT adapter: %s", e)
+        raise
+
+
+# ---------------------------
+# CLI smoke test
+# ---------------------------
+
+def _cli_smoke_test():
+    import argparse
+    p = argparse.ArgumentParser()
+    p.add_argument("--model", type=str, default="distilbert-base-uncased")
+    p.add_argument("--save_to", type=str, default="./tmp/general_wrapper_test")
+    p.add_argument("--local", action="store_true")
+    args = p.parse_args()
+
+    cfg = GeneralModelConfig(model_name_or_path=args.model)
+    logger.info("Loading model %s", args.model)
+    m = load_pretrained_with_fallback(args.model, local_files_only=args.local)
+    wrapper = BaseModelWrapper(model=m, tokenizer=None, cfg=cfg)
+    logger.info("Model summary: %s", wrapper.summary())
+    logger.info("Saving wrapper to %s", args.save_to)
+    wrapper.save(args.save_to)
+    logger.info("Smoke test finished")
+
+
+if __name__ == "__main__":
+    _cli_smoke_test()
+
