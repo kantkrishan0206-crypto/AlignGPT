@@ -1,0 +1,13 @@
+name: rlhf-lab
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11
+  - pytorch
+  - transformers
+  - datasets
+  - tqdm
+  - yaml
+  - scikit-learn
+
