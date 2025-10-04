@@ -1,0 +1,194 @@
+"""
+tests/test_data.py
+
+Unit tests for data-loading utilities in rlhf-lab.
+
+These tests are self-contained and do not require downloading large models or
+external tokenizers. We use a small FakeTokenizer to mimic the minimal tokenizer
+interface expected by the dataset helpers.
+
+Run with:
+    pytest -q
+
+"""
+
+from __future__ import annotations
+
+import os
+import sys
+import json
+import tempfile
+import torch
+import pytest
+
+# ensure project src is importable when tests run from repo root
+ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if ROOT not in sys.path:
+    sys.path.insert(0, ROOT)
+
+# Import target modules (support both direct and package import layouts)
+try:
+    from src.training.sft_trainer import SFTDataset, SFTConfig
+except Exception:
+    from training.sft_trainer import SFTDataset, SFTConfig
+
+try:
+    from src.models.reward import load_pref_pairs_from_jsonl, PrefPairDataset, RewardConfig
+except Exception:
+    from models.reward import load_pref_pairs_from_jsonl, PrefPairDataset, RewardConfig
+
+try:
+    from src.training.ppo_trainer import PromptDataset
+except Exception:
+    from training.ppo_trainer import PromptDataset
+
+
+# ------------------
+# Fake tokenizer(s)
+# ------------------
+
+class FakeTokenizerSimple:
+    """Minimal tokenizer mimic for SFTDataset tests.
+
+    Methods provided:
+      - __call__(text, truncation=True, max_length=...)
+      - encode(text, add_special_tokens=False)
+      - cfg with bos_token/eos_token attributes
+      - pad_token_id
+    """
+
+    def __init__(self, pad_token: str = "<pad>"):
+        self.cfg = type("C", (), {})()
+        self.cfg.bos_token = ""
+        self.cfg.eos_token = ""
+        self._pad = 0
+
+    def __call__(self, text, truncation=True, max_length=None, return_tensors=None, **kwargs):
+        # deterministically produce token ids as lengths of each word + 1
+        ids = [len(w) + 1 for w in text.split() if w != ""]
+        if max_length is not None:
+            ids = ids[:max_length]
+        if return_tensors == "pt":
+            import torch
+            return {"input_ids": torch.tensor([ids], dtype=torch.long), "attention_mask": torch.tensor([[1]*len(ids)], dtype=torch.long)}
+        return {"input_ids": ids, "attention_mask": [1]*len(ids)}
+
+    def encode(self, text, add_special_tokens=False):
+        return self(text)["input_ids"]
+
+    @property
+    def pad_token_id(self):
+        return self._pad
+
+
+class FakeTokenizerTorch(FakeTokenizerSimple):
+    """Fake tokenizer that returns already-squeezed tensors when requested by reward PrefPairDataset."""
+    def __call__(self, text, truncation=True, max_length=None, return_tensors=None, **kwargs):
+        ids = [len(w) + 1 for w in text.split() if w != ""]
+        if max_length is not None:
+            ids = ids[:max_length]
+        if return_tensors == "pt":
+            return {"input_ids": torch.tensor(ids, dtype=torch.long), "attention_mask": torch.tensor([1]*len(ids), dtype=torch.long)}
+        return {"input_ids": ids, "attention_mask": [1]*len(ids)}
+
+    @property
+    def sep_token(self):
+        return "<SEP>"
+
+
+# ------------------
+# Tests
+# ------------------
+
+def write_jsonl(lines, path):
+    with open(path, "w", encoding="utf-8") as fh:
+        for obj in lines:
+            fh.write(json.dumps(obj, ensure_ascii=False) + "\n")
+
+
+def test_sft_dataset_masks_prompt(tmp_path):
+    # prepare sample SFT JSONL
+    sample = [{"prompt": "Q: Hello", "response": "A: Hi there"}, {"prompt": "Q: Bye", "response": "A: See ya"}]
+    fpath = tmp_path / "sft.jsonl"
+    write_jsonl(sample, fpath)
+
+    # Fake tokenizer
+    tok = FakeTokenizerSimple()
+    cfg = SFTConfig(model_name_or_path="dummy", tokenizer_name_or_path=None)
+    # instantiate dataset
+    ds = SFTDataset(str(fpath), tokenizer=tok, cfg=cfg)
+    assert len(ds) == 2
+
+    item0 = ds[0]
+    assert isinstance(item0, dict)
+    assert "input_ids" in item0 and "labels" in item0
+    input_ids = item0["input_ids"]
+    labels = item0["labels"]
+    # ensure labels length matches input_ids
+    assert len(input_ids) == len(labels)
+
+    # compute expected prompt length
+    prompt_len = len(tok.encode(sample[0]["prompt"]))
+    # first prompt_len labels should be -100
+    assert all(l == -100 for l in labels[:prompt_len])
+
+
+def test_load_pref_pairs_and_prefpairdataset(tmp_path):
+    pairs = [
+        {"prompt": "Q: What is AI?", "chosen": "AI is intelligence.", "rejected": "AI is a sandwich."},
+        {"prompt": "Write greeting", "chosen": "Hello!", "rejected": "Go away."},
+    ]
+    fpath = tmp_path / "pref_pairs.jsonl"
+    write_jsonl(pairs, fpath)
+
+    loaded = load_pref_pairs_from_jsonl(str(fpath))
+    assert isinstance(loaded, list) and len(loaded) == 2
+
+    # create PrefPairDataset with a fake torch-returning tokenizer
+    rtok = FakeTokenizerTorch()
+    cfg = RewardConfig(model_name_or_path="dummy", max_length=64)
+    ds = PrefPairDataset(loaded, tokenizer=rtok, cfg=cfg)
+    assert len(ds) == 2
+
+    item = ds[0]
+    assert "chosen" in item and "rejected" in item
+    # chosen and rejected should be dicts with torch tensors
+    c = item["chosen"]
+    r = item["rejected"]
+    assert isinstance(c["input_ids"], torch.Tensor)
+    assert isinstance(r["input_ids"], torch.Tensor)
+
+
+def test_load_pref_pairs_skips_invalid_lines(tmp_path):
+    lines = [
+        {"prompt": "p1", "chosen": "c1", "rejected": "r1"},
+        {"invalid": "missing fields"},
+        "not a json dict",
+    ]
+    p = tmp_path / "bad.jsonl"
+    with open(p, "w", encoding="utf-8") as fh:
+        fh.write(json.dumps(lines[0]) + "\n")
+        fh.write(json.dumps(lines[1]) + "\n")
+        fh.write("not json\n")
+
+    loaded = load_pref_pairs_from_jsonl(str(p))
+    assert len(loaded) == 1
+    assert loaded[0]["prompt"] == "p1"
+
+
+def test_prompt_dataset_accepts_various_formats(tmp_path):
+    data = ["Simple prompt", {"prompt": "Dict prompt"}]
+    p = tmp_path / "prompts.jsonl"
+    with open(p, "w", encoding="utf-8") as fh:
+        for obj in data:
+            fh.write(json.dumps(obj) + "\n")
+
+    ds = PromptDataset(str(p))
+    assert len(ds) == 2
+    assert ds[0] == "Simple prompt"
+    assert ds[1] == "Dict prompt"
+
+
+if __name__ == "__main__":
+    # Run tests directly
+    pytest.main([os.path.abspath(__file__)])
