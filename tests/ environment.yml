@@ -1,13 +1,73 @@
+# Conda environment for rlhf-lab
+
+# Usage:
+
+# conda env create -f environment.yml
+
+# conda activate rlhf-lab
+
+#
+
+# NOTE: This file installs CPU-friendly versions by default. If you want CUDA-enabled
+
+# PyTorch, follow the instructions at [https://pytorch.org](https://pytorch.org) to pick the correct torch/torchaudio
+
+# wheel for your CUDA version and install via pip after creating the env.
+
 name: rlhf-lab
 channels:
-  - conda-forge
-  - defaults
-dependencies:
-  - python=3.11
-  - pytorch
-  - transformers
-  - datasets
-  - tqdm
-  - yaml
-  - scikit-learn
 
+* conda-forge
+* defaults
+  dependencies:
+* python=3.11
+* pip
+* git
+* cmake
+* make
+* build-essential  # linux toolchain (Windows users: install Visual Studio Build Tools)
+* gcc_linux-64  # for manylinux builds on linux; safe to include
+* cudatoolkit=11.8  # optional; remove or change if you don't have CUDA — keep for portability
+* pip:
+
+  * --upgrade pip
+  * torch
+  * torchvision
+  * torchaudio
+  * transformers
+  * datasets
+  * tokenizers
+  * sentencepiece
+  * accelerate
+  * bitsandbytes
+  * peft
+  * safetensors
+  * evaluate
+  * rouge-score
+  * sacrebleu
+  * wandb
+  * tqdm
+  * scikit-learn
+  * pyyaml
+  * matplotlib
+  * seaborn
+  * jupyterlab
+  * ipython
+  * black
+  * isort
+  * pytest
+  * flake8
+
+# Post-creation notes (copy into terminal after env creation):
+
+# 1) If you want a CUDA-accelerated PyTorch, follow the PyTorch install guide for your CUDA version, e.g.:
+
+# pip install --index-url [https://download.pytorch.org/whl/cu118](https://download.pytorch.org/whl/cu118) torch torchvision torchaudio --extra-index-url [https://download.pytorch.org/whl/cu118](https://download.pytorch.org/whl/cu118)
+
+# 2) If using bitsandbytes with GPU, ensure you have a compatible CUDA + gcc version (see bitsandbytes docs).
+
+# 3) To install Hugging Face accelerate CPU/GPU tooling: `accelerate config --default` and follow prompts.
+
+# 4) If you plan to use Hugging Face Hub push/pull: `pip install huggingface-hub` and `huggingface-cli login`.
+
+# 5) For Windows users, drop `build-essential` and use Visual Studio Build Tools instead.
