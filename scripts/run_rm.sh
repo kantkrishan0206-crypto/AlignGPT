@@ -1,27 +1,3 @@
-#!/usr/bin/env bash
-# ----------------------------------------------------------------------------
-# run_rm.sh
-#
-# Robust launcher script to run Reward Model (RM) training for the rlhf-lab project.
-# Designed for local development (VS Code) and single-node GPU runs.
-#
-# Features:
-# - argument parsing with config overrides
-# - conda / venv auto-activation support
-# - optional multi-GPU entrypoints via torchrun (single-node)
-# - environment validation (python, CUDA, GPUs)
-# - logging to rolling log files and stdout
-# - resume/load-from-checkpoint support
-# - dry-run mode to check everything before launching
-# - optional small-sample dataset download for quick smoke tests
-#
-# Usage examples:
-#   ./scripts/run_rm.sh --config configs/rm_gpt2.yaml
-#   ./scripts/run_rm.sh --config configs/rm_gpt2.yaml --train_file data/pref_pairs.jsonl --epochs 3
-#   ./scripts/run_rm.sh --dry-run
-#
-# Note: this script intentionally avoids destructive actions. Use --force to overwrite output.
-# ----------------------------------------------------------------------------
 
 set -euo pipefail
 IFS=$'\n\t'
