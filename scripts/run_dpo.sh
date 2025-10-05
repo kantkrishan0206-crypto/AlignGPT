@@ -1,29 +1,3 @@
-#!/usr/bin/env bash
-# ----------------------------------------------------------------------------
-# run_dpo.sh
-#
-# Robust launcher script to run Direct Preference Optimization (DPO) training
-# for the rlhf-lab project. Designed to work well for local development (VS Code)
-# and single-node GPU experiments.
-#
-# Features:
-# - argument parsing with config overrides
-# - conda / venv auto-activation support
-# - optional multi-GPU entrypoints via torchrun
-# - environment validation (python, CUDA, GPUs)
-# - logging to timestamped log files and stdout
-# - resume/load-from-checkpoint support
-# - dry-run mode to check everything before launching
-# - optional small-sample dataset download for quick smoke tests
-#
-# Usage examples:
-#   ./scripts/run_dpo.sh --config configs/dpo_gpt2.yaml
-#   ./scripts/run_dpo.sh --config configs/dpo_gpt2.yaml --train_file data/pref_pairs.jsonl --epochs 3
-#   ./scripts/run_dpo.sh --dry-run
-#
-# This script is intentionally conservative and will not overwrite checkpoints unless
-# --force is passed. It writes logs under logs/ and a run summary JSON in the output dir.
-# ----------------------------------------------------------------------------
 
 set -euo pipefail
 IFS=$'\n\t'
