@@ -1,28 +1,4 @@
-#!/usr/bin/env bash
-# ----------------------------------------------------------------------------
-# run_ppo.sh
-#
-# Robust launcher for PPO training (policy optimization) in the rlhf-lab project.
-# Designed to work for local development (VS Code) and single-node GPU runs.
-#
-# Features:
-# - CLI argument parsing + config overrides
-# - conda/venv activation support
-# - torchrun / deepspeed entrypoints for multi-GPU single-node runs
-# - environment validation (python, CUDA, GPUs)
-# - timestamped logging (stdout + log file)
-# - dry-run mode that validates and prints the command without running
-# - resume from checkpoint support
-# - optional download of a tiny prompts file for smoke testing
-#
-# Usage examples:
-#   ./scripts/run_ppo.sh --config configs/ppo_gpt2.yaml
-#   ./scripts/run_ppo.sh --config configs/ppo_gpt2.yaml --prompts data/prompts.jsonl --reward checkpoints/rm/final
-#   ./scripts/run_ppo.sh --dry-run
-#
-# Note: This launcher is conservative and will not overwrite an existing output
-# directory unless --force is supplied.
-# ----------------------------------------------------------------------------
+
 
 set -euo pipefail
 IFS=$'\n\t'
