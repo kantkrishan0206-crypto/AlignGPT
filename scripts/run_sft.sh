@@ -1,29 +1,3 @@
-#!/usr/bin/env bash
-# ----------------------------------------------------------------------------
-# run_sft.sh
-#
-# Robust launcher script to run Supervised Fine-Tuning (SFT) training for
-# the rlhf-lab project. Designed to be safe, reproducible, and work well for
-# local development (VS Code) as well as small-scale single-node GPU runs.
-#
-# Features:
-# - argument parsing and config overrides
-# - conda / venv auto-activation support
-# - optional deepspeed / torchrun support for multi-GPU
-# - automatic environment validation (python, CUDA, GPUs)
-# - logging to rolling log files and stdout
-# - resume/load-from-checkpoint support
-# - dry-run mode to check everything before launching
-#
-# Usage examples:
-#   ./scripts/run_sft.sh --config configs/sft_gpt2.yaml
-#   ./scripts/run_sft.sh --config configs/sft_gpt2.yaml --epochs 3 --batch_size 8
-#   ./scripts/run_sft.sh --config configs/sft_gpt2.yaml --resume checkpoints/sft/step_1000
-#   ./scripts/run_sft.sh --dry-run
-#
-# NOTE: This script is intentionally conservative. It will not overwrite
-# checkpoints unless you explicitly pass --force.
-# ----------------------------------------------------------------------------
 
 set -euo pipefail
 IFS=$'\n\t'
