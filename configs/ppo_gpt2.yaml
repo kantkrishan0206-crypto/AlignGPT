@@ -1,0 +1,50 @@
+model_name: gpt2
+trust_remote_code: false
+seed: 42
+device: auto  # auto, cuda, cpu
+
+policy_ckpt: ./checkpoints/sft_gpt2
+reward_ckpt: ./checkpoints/rm_gpt2
+
+data:
+  prompts_path: data/prompts.jsonl
+  prompt_field: prompt
+  max_prompt_length: 256
+  max_response_length: 256
+
+ppo:
+  batch_size: 8
+  mini_batch_size: 8
+  ppo_epochs: 1
+  learning_rate: 1e-5
+  gradient_accumulation_steps: 1
+  cliprange: 0.2
+  target_kl: 0.1
+  init_kl_coef: 0.2
+  kl_penalty: kl  # kl or abs
+
+optim:
+  beta1: 0.9
+  beta2: 0.95
+  eps: 1e-8
+  weight_decay: 0.0
+
+gen:
+  do_sample: true
+  top_p: 0.9
+  top_k: 0
+  temperature: 1.0
+  repetition_penalty: 1.0
+  eos_token_id: null
+
+training:
+  gradient_checkpointing: false
+  grad_clip_norm: 1.0
+  dataloader_num_workers: 0
+  save_steps: 200
+  save_total_limit: 3
+
+log_dir: ./logs
+output_dir: ./checkpoints/ppo_gpt2
+report_to: []      # e.g., ["wandb"]
+run_name: null
