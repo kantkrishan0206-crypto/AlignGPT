@@ -1,0 +1,10 @@
+model_name: gpt2
+seed: 42
+
+data:
+  path: data/pref_pairs.jsonl
+
+training:
+  batch_size: 4
+  epochs: 3
+  lr: 1e-5
