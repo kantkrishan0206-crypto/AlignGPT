@@ -1,1 +1,0 @@
-the pref_pair__large__jsonl 12000. have the file of sft.jsonl. this file have list of oairs of choosen and rejected pair of prompt that tells llm what to answer at first from pair of prompt  . correct pair of  answer  list that have answer of question.
