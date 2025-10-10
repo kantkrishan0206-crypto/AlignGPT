@@ -1,0 +1,44 @@
+model_name: gpt2
+trust_remote_code: false
+seed: 42
+device: auto  # auto, cuda, cpu
+
+policy_ckpt: ./checkpoints/sft_gpt2
+ref_ckpt: null
+
+data:
+  path: data/pref_pairs.jsonl
+  prompt_field: prompt
+  chosen_field: chosen
+  rejected_field: rejected
+  max_length: 512
+
+training:
+  batch_size: 8
+  epochs: 3
+  learning_rate: 1e-5
+  weight_decay: 0.0
+  warmup_ratio: 0.05
+  gradient_accumulation_steps: 1
+  grad_clip_norm: 1.0
+  dataloader_num_workers: 0
+  save_steps: 200
+  save_total_limit: 3
+
+optim:
+  beta1: 0.9
+  beta2: 0.95
+  eps: 1e-8
+
+dpo:
+  beta: 0.1
+  kl_coef: 0.02
+
+log_dir: ./logs
+output_dir: ./checkpoints/dpo_gpt2
+report_to: []      # e.g., ["wandb"]
+run_name: null
+
+eval:
+  sample_size: 128
+  every_steps: 500
