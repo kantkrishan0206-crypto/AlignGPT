@@ -1,0 +1,8 @@
+# configs/eval_config.yaml
+eval_dataset: data/prompts.jsonl
+batch_size: 16
+metrics:
+  - perplexity
+  - reward_score
+  - diversity
+output_dir: logs/eval/
