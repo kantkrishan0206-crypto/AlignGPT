@@ -1,0 +1,31 @@
+name: aligngpt
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - python=3.10
+  - pip
+  - pip:
+      # Core ML / NLP libraries
+      - torch>=2.0
+      - transformers>=4.40
+      - datasets>=2.19
+      - accelerate>=0.30
+      - trl>=0.9
+      - peft>=0.10
+      - sentencepiece
+      - evaluate
+      - scikit-learn
+      - numpy
+      - pandas
+      - tqdm
+
+      # Experiment tracking / logging
+      - wandb
+      - tensorboard
+
+      # Utilities
+      - jupyter
+      - ipykernel
+      - matplotlib
+      - seaborn
