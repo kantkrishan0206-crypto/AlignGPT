@@ -1,0 +1,10 @@
+slos:
+  api_availability:
+    target: 99.5
+    window: 30d
+  p95_latency_ms:
+    target: 2500
+    window: 7d
+  critical_safety_regressions:
+    target: 0
+    window: 30d

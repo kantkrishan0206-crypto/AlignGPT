@@ -1,0 +1,12 @@
+name: aligngpt-training
+stages:
+  - validate_dataset
+  - supervised_fine_tuning
+  - reward_model_training
+  - preference_optimization
+  - automated_evaluation
+  - model_card_update
+artifacts:
+  - checkpoints
+  - run_manifest
+  - evaluation_report

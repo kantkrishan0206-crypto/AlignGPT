@@ -1,0 +1,17 @@
+model_id: aligngpt-policy-dev
+base_model: gpt2
+trust_remote_code: false
+adapter:
+  type: lora
+  rank: 8
+  alpha: 16
+training:
+  objective: dpo
+  seed: 42
+evaluation:
+  required_suites:
+    - aligngpt_smoke
+    - safety_prompt_injection
+promotion:
+  minimum_required_term_coverage: 0.75
+  require_security_scan: true

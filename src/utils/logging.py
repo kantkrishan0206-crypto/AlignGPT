@@ -101,7 +101,7 @@ def log_dict(logger: logging.Logger, label: str, data: Dict[str, Any], level: in
     compact = {}
     for k, v in data.items():
         s = str(v)
-        compact[k] = (s[:300] + "…") if len(s) > 300 else s
+        compact[k] = (s[:300] + "...") if len(s) > 300 else s
     logger.log(level, f"{label}: {json.dumps(compact, ensure_ascii=False)}")
 
 # Optional integrations with WandB/MLflow (lazy import)

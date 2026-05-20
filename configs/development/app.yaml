@@ -1,0 +1,8 @@
+environment: development
+service_name: aligngpt
+log_level: DEBUG
+model_backend: mock
+safety_profile: standard
+enable_retrieval: true
+request_timeout_seconds: 30
+max_prompt_chars: 8000

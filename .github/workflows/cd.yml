@@ -1,0 +1,22 @@
+name: CD
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-container:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build API container
+        run: docker build -f deployment/docker/Dockerfile -t aligngpt-api:${{ github.sha }} .
+      - name: Deployment gate
+        run: |
+          echo "Container built. Publishing and environment promotion require configured registry credentials."

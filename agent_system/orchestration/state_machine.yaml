@@ -1,0 +1,13 @@
+states:
+  - received
+  - safety_checked
+  - planned
+  - tool_execution
+  - model_response
+  - evaluated
+  - completed
+guards:
+  safety_checked:
+    requires: ["prompt_injection_scan", "pii_redaction"]
+  tool_execution:
+    requires: ["tool_allowlist", "argument_validation"]

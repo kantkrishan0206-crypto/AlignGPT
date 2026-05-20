@@ -1,0 +1,7 @@
+patterns:
+  email: "\\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}\\b"
+  phone: "\\b(?:\\+?\\d{1,3}[-.\\s]?)?(?:\\(?\\d{3}\\)?[-.\\s]?)\\d{3}[-.\\s]?\\d{4}\\b"
+logging:
+  redact_prompt_body: true
+  redact_response_body: true
+  retain_trace_id: true

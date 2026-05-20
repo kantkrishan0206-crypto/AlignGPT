@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+build/
+dist/
+*.egg-info/
+
+# Environments and secrets
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+
+# Model and experiment artifacts
+checkpoints/
+logs/
+reports/
+artifacts/
+wandb/
+mlruns/
+*.safetensors
+*.pt
+*.bin
+
+# Node
+node_modules/
+.next/
+out/
+
+# Local OS/editor files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

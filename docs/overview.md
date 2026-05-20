@@ -1,15 +1,13 @@
 # Project Overview
 
-This repository implements a modular RLHF (Reinforcement Learning with Human Feedback) pipeline.  
-It covers the full stack:
+AlignGPT began as a modular RLHF pipeline and now sits inside a broader AI platform architecture.
 
-- **Data preparation**: converting open datasets into `sft.jsonl`, `prompts.jsonl`, and `pref_pairs.jsonl`.
-- **Supervised Fine-Tuning (SFT)**: training a base model on instruction–response pairs.
-- **Reward Modeling (RM)**: learning a scoring function from preference pairs.
-- **Policy Optimization (PPO/DPO)**: aligning the model with human preferences.
-- **Evaluation**: measuring alignment, helpfulness, and safety.
+The retained prototype covers:
 
-The design emphasizes:
-- Reproducibility (clear configs, checkpoints, logs).
-- Modularity (separate scripts for SFT, RM, PPO/DPO, evaluation).
-- Extensibility (easy to swap models, datasets, or algorithms).
+- Data preparation for `sft.jsonl`, `prompts.jsonl`, and `pref_pairs.jsonl`.
+- Supervised fine-tuning for instruction-response data.
+- Reward modeling from pairwise preferences.
+- Policy optimization through PPO and DPO.
+- Automatic and human-oriented evaluation utilities.
+
+The expanded platform adds backend services, frontend operations views, deployment assets, security policy, observability, benchmark automation, SDKs, and clearer research governance.

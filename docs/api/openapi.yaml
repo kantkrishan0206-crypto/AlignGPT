@@ -1,0 +1,38 @@
+openapi: 3.1.0
+info:
+  title: AlignGPT API
+  version: 0.2.0
+  description: Starter API contract for alignment inference and evaluation workflows.
+paths:
+  /health:
+    get:
+      summary: Service health check
+      responses:
+        "200":
+          description: Service is healthy
+  /v1/align:
+    post:
+      summary: Submit a prompt to the alignment service
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [prompt]
+              properties:
+                prompt:
+                  type: string
+                task:
+                  type: string
+                metadata:
+                  type: object
+      responses:
+        "200":
+          description: Alignment response
+  /v1/evaluate:
+    post:
+      summary: Run a deterministic evaluation request
+      responses:
+        "202":
+          description: Evaluation accepted

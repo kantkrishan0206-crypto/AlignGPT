@@ -1,0 +1,8 @@
+{
+  "title": "AlignGPT Platform Overview",
+  "panels": [
+    { "title": "API Latency", "type": "timeseries" },
+    { "title": "Safety Findings", "type": "barchart" },
+    { "title": "Benchmark Pass Rate", "type": "stat" }
+  ]
+}

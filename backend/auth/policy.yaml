@@ -1,0 +1,10 @@
+roles:
+  viewer:
+    permissions: ["runs:read", "benchmarks:read"]
+  researcher:
+    permissions: ["runs:read", "runs:create", "benchmarks:read", "benchmarks:create"]
+  operator:
+    permissions: ["deployments:read", "deployments:promote", "incidents:write"]
+defaults:
+  deny_unknown_roles: true
+  require_service_token: true

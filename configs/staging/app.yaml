@@ -1,0 +1,8 @@
+environment: staging
+service_name: aligngpt
+log_level: INFO
+model_backend: mock
+safety_profile: strict
+enable_retrieval: true
+request_timeout_seconds: 20
+max_prompt_chars: 8000

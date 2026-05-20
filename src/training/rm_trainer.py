@@ -3,7 +3,7 @@
 """
 Reward Model Trainer
 - Trains a reward model from preference pairs (A vs B)
-- Uses Bradley–Terry style pairwise loss
+- Uses Bradley-Terry style pairwise loss
 - Config-driven (configs/rm_gpt2.yaml)
 """
 
@@ -21,7 +21,7 @@ from src.utils.checkpoints import save_checkpoint_safe
 from src.models.reward import RewardModel
 
 class PairwiseLoss(nn.Module):
-    """Bradley–Terry loss for preference pairs."""
+    """Bradley-Terry loss for preference pairs."""
     def forward(self, chosen_scores, rejected_scores):
         return -torch.mean(torch.log(torch.sigmoid(chosen_scores - rejected_scores)))
 

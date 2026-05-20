@@ -1,0 +1,11 @@
+flowchart LR
+    User["Researcher / Operator"] --> Frontend["Dashboard"]
+    Frontend --> API["API Gateway"]
+    SDK["SDK / CLI"] --> API
+    API --> Safety["Safety Layer"]
+    Safety --> Router["Inference Router"]
+    Router --> Models["Model Backends"]
+    Router --> Retrieval["Retrieval"]
+    API --> Eval["Evaluation Service"]
+    Eval --> Benchmarks["Benchmark Reports"]
+    API --> Obs["Observability"]

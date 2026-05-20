@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Model Evaluation Manifest",
+  "type": "object",
+  "required": ["model_id", "model_revision", "benchmark_suite", "metrics", "decision"],
+  "properties": {
+    "model_id": { "type": "string" },
+    "model_revision": { "type": "string" },
+    "benchmark_suite": { "type": "string" },
+    "metrics": { "type": "object" },
+    "safety_findings": { "type": "array" },
+    "decision": { "enum": ["promote", "hold", "reject"] }
+  }
+}

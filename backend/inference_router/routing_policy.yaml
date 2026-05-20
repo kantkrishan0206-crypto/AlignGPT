@@ -1,0 +1,10 @@
+default_backend: mock
+routes:
+  chat:
+    backend: mock
+    max_latency_ms: 2500
+  reward_scoring:
+    backend: local_reward_model
+    max_latency_ms: 1000
+fallbacks:
+  local_reward_model: mock

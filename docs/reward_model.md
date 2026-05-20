@@ -1,25 +1,24 @@
-
----
-
-## 📂 `docs/reward_model.md`
-
-```markdown
 # Reward Model
 
-The Reward Model (RM) learns to score responses based on human preferences.
+The reward model learns a scalar preference score from chosen/rejected response pairs.
 
 ## Training Objective
-- Input: `(prompt, chosen, rejected)`
-- Loss: Margin-based or pairwise ranking loss
-  - Encourage `score(chosen) > score(rejected)`
 
-## Implementation
-- Base: Transformer encoder/decoder (e.g., GPT‑2, LLaMA).
-- Head: Linear layer projecting hidden states to scalar reward.
-- Training: AdamW optimizer, learning rate scheduling, gradient clipping.
+- Input: `(prompt, chosen, rejected)`.
+- Objective: encourage `score(chosen) > score(rejected)`.
+- Common loss: Bradley-Terry or margin-based pairwise ranking loss.
 
-## Outputs
-- Checkpoints saved in `checkpoints/rm/`
-- Used for:
-  - PPO training (reward signal)
-  - Evaluation of candidate responses
+## Implementation Notes
+
+- Initial implementation: `src/models/reward.py`.
+- Base model: transformer hidden-state provider.
+- Reward head: scalar projection over pooled hidden states.
+- Training loop: `src/training/rm_trainer.py`.
+
+## Evaluation Needs
+
+- Held-out preference-pair win rate.
+- Calibration by score bucket.
+- Safety slice analysis.
+- Reward hacking examples.
+- Model-card update after each promoted checkpoint.

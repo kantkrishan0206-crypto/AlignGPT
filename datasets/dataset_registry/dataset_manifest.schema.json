@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AlignGPT Dataset Manifest",
+  "type": "object",
+  "required": ["dataset_id", "version", "source", "license", "schema", "quality_checks"],
+  "properties": {
+    "dataset_id": { "type": "string" },
+    "version": { "type": "string" },
+    "source": { "type": "string" },
+    "license": { "type": "string" },
+    "schema": { "type": "object" },
+    "quality_checks": { "type": "array", "items": { "type": "string" } },
+    "pii_policy": { "type": "string" },
+    "intended_use": { "type": "string" }
+  }
+}

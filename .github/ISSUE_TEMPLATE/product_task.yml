@@ -1,0 +1,23 @@
+name: Product task
+description: Propose a dashboard, API, SDK, or workflow improvement.
+title: "[Product]: "
+labels: ["product", "triage"]
+body:
+  - type: textarea
+    id: user_workflow
+    attributes:
+      label: User workflow
+      description: Who is the user and what job are they trying to do?
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+    validations:
+      required: true
+  - type: textarea
+    id: interfaces
+    attributes:
+      label: Interfaces affected
+      description: API, frontend, SDK, CLI, database, deployment, or docs.

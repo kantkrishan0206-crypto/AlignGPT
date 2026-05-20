@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AlignGPT Run Manifest",
+  "type": "object",
+  "required": ["run_id", "config_hash", "dataset_fingerprint", "model_revision", "metrics"],
+  "properties": {
+    "run_id": { "type": "string" },
+    "config_hash": { "type": "string" },
+    "dataset_fingerprint": { "type": "string" },
+    "model_revision": { "type": "string" },
+    "seed": { "type": "integer" },
+    "hardware": { "type": "object" },
+    "metrics": { "type": "object" },
+    "artifacts": { "type": "array", "items": { "type": "string" } }
+  }
+}

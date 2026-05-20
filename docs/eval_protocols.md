@@ -1,24 +1,27 @@
 # Evaluation Protocols
 
-Evaluation ensures the aligned model is:
-- Helpful
-- Honest
-- Harmless
+Evaluation should measure capability, alignment, safety, and system behavior.
 
-## 1. Automatic Metrics
-- Perplexity (fluency)
-- Reward Model score
-- Diversity (distinct n‑grams)
+## Automatic Metrics
 
-## 2. Preference Evaluation
-- Sample multiple responses per prompt
-- Rank with Reward Model
-- Compare against baseline SFT
+- Perplexity or loss where relevant.
+- Reward-model score.
+- Lexical diversity and repetition.
+- Required-term coverage for deterministic smoke checks.
+- Retrieval citation faithfulness.
 
-## 3. Human Evaluation (optional)
-- Side‑by‑side comparisons
-- Annotator ratings for helpfulness, safety, factuality
+## Preference Evaluation
 
-## 4. Logging
-- Results stored in `logs/eval/`
-- TensorBoard/W&B dashboards for visualization
+- Sample multiple responses per prompt.
+- Rank with reward model and human review where available.
+- Compare against baseline SFT and previous promoted model.
+
+## Human Evaluation
+
+- Side-by-side response comparison.
+- Rubrics for helpfulness, honesty, harmlessness, and factuality.
+- Annotator guidelines and disagreement tracking.
+
+## Logging
+
+Store metrics, non-sensitive traces, config hashes, dataset fingerprints, and artifact references. Do not log raw sensitive prompts or responses without an explicit privacy review.

@@ -1,0 +1,31 @@
+name: Research task
+description: Propose an experiment, ablation, benchmark, or evaluation study.
+title: "[Research]: "
+labels: ["research", "triage"]
+body:
+  - type: textarea
+    id: hypothesis
+    attributes:
+      label: Hypothesis
+      description: What claim should this test?
+    validations:
+      required: true
+  - type: textarea
+    id: method
+    attributes:
+      label: Method
+      description: Dataset, model, training or evaluation plan.
+    validations:
+      required: true
+  - type: textarea
+    id: metrics
+    attributes:
+      label: Metrics and thresholds
+      description: Include baseline and success criteria.
+    validations:
+      required: true
+  - type: textarea
+    id: reproducibility
+    attributes:
+      label: Reproducibility
+      description: Seeds, configs, artifacts, and compute assumptions.

@@ -1,0 +1,7 @@
+rules:
+  - id: ignore_previous
+    severity: high
+    pattern: "\\b(ignore|forget|override)\\b.{0,40}\\b(previous|prior|system)\\b"
+  - id: disable_safety
+    severity: high
+    pattern: "\\b(disable|bypass|turn off)\\b.{0,40}\\b(safety|guardrail|policy|filter)\\b"
