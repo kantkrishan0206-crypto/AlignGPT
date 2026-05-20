@@ -1,8 +1,36 @@
 {
-  "title": "AlignGPT Platform Overview",
+  "title": "AlignGPT Operational Control Plane",
+  "timezone": "browser",
+  "schemaVersion": 39,
   "panels": [
-    { "title": "API Latency", "type": "timeseries" },
-    { "title": "Safety Findings", "type": "barchart" },
-    { "title": "Benchmark Pass Rate", "type": "stat" }
+    {
+      "title": "API Requests",
+      "type": "stat",
+      "targets": [{ "expr": "sum(aligngpt_requests_total)" }]
+    },
+    {
+      "title": "Estimated Latency Max",
+      "type": "timeseries",
+      "targets": [{ "expr": "aligngpt_estimated_latency_ms_max" }]
+    },
+    {
+      "title": "Reward Score Average",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "sum(aligngpt_reward_score_sum) / sum(aligngpt_reward_score_count)"
+        }
+      ]
+    },
+    {
+      "title": "Safety Findings",
+      "type": "barchart",
+      "targets": [{ "expr": "sum by (severity) (aligngpt_safety_findings_total)" }]
+    },
+    {
+      "title": "Router Backend Usage",
+      "type": "piechart",
+      "targets": [{ "expr": "sum by (backend) (aligngpt_estimated_latency_ms_count)" }]
+    }
   ]
 }

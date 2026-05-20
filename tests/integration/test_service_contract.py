@@ -18,9 +18,10 @@ def test_alignment_service_returns_contract_response():
     response = service.handle(AlignmentRequest(prompt="Explain reward modeling for alignment."))
 
     assert response.request_id
-    assert response.model_backend == "mock"
+    assert response.model_backend == "vllm-a10g-primary"
     assert response.citations == ("docs/reward_model.md",)
     assert response.metadata["retrieved_documents"] == 1
+    assert response.metadata["route"]["fallback_chain"]
 
 
 def test_alignment_service_blocks_high_risk_prompt():

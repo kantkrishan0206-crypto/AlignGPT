@@ -1,0 +1,22 @@
+sequenceDiagram
+    participant U as User
+    participant W as Web/SDK
+    participant A as API Gateway
+    participant S as Safety
+    participant R as Retrieval
+    participant G as GPU Router
+    participant M as Model Backend
+    participant E as Evaluator
+    participant O as Observability
+    U->>W: Submit alignment prompt
+    W->>A: POST /v1/evaluate
+    A->>S: Scan prompt and redact PII
+    S->>R: Query safe prompt
+    R-->>S: Context + citations
+    S->>G: Build request profile
+    G-->>S: Backend + fallback chain
+    S->>M: Execute inference if allowed
+    M-->>E: Candidate answer
+    E->>E: Reward, safety, benchmark metrics
+    E->>O: Trace events + metrics
+    E-->>W: Response + report-ready payload

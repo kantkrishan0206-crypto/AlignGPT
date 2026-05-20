@@ -1,0 +1,9 @@
+flowchart LR
+    Prompt["Safe Prompt"] --> Normalize["Normalize + redact"]
+    Normalize --> Search["Keyword/Vector Search"]
+    Search --> Filter["Access + safety filter"]
+    Filter --> Rerank["Rerank + cite"]
+    Rerank --> Context["Grounded Context Pack"]
+    Context --> Router["Inference Router"]
+    Router --> Response["Grounded Response"]
+    Response --> Eval["Citation + hallucination evaluation"]

@@ -46,7 +46,7 @@ where = ["src"]
 include = ["aligngpt*"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests/unit", "tests/integration"]
+testpaths = ["tests"]
 addopts = "-q"
 pythonpath = ["src"]
 markers = [

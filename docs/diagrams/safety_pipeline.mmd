@@ -1,0 +1,9 @@
+flowchart LR
+    Input["Prompt"] --> Injection["Prompt Injection Rules"]
+    Input --> PII["PII Redaction"]
+    Injection --> Gate["Execution Gate"]
+    PII --> Gate
+    Gate -->|allowed| Retrieval["Retrieval"]
+    Gate -->|blocked| Review["Safety Review Response"]
+    Retrieval --> OutputScan["Response Scan"]
+    OutputScan --> Audit["Audit Trail + Metrics"]

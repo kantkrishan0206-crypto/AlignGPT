@@ -13,6 +13,20 @@ AlignGPT is designed as a layered AI platform, not a single training script.
 - Experiment Registry: stores run manifests, config hashes, dataset fingerprints, artifact references, and model-card metadata.
 - Observability: metrics, traces, structured logs, alerts, and benchmark regressions.
 
+## Vertical Flows
+
+### Alignment Evaluation Pipeline
+
+`POST /v1/evaluate` validates a prompt, applies safety checks, retrieves evidence, uses the GPU-aware router to select an inference backend, generates a deterministic local response in development, scores grounding/reward, emits metrics, and returns trace events that can be rendered by the dashboard.
+
+### Benchmark + Reproducibility Pipeline
+
+`benchmarking/reproducibility/run_operational_benchmark.py` runs the alignment pipeline and writes JSON, CSV, Markdown, and comparison artifacts under `benchmarking/results/`. This creates a stable artifact contract for CI, release gates, and dashboard ingestion.
+
+### Deployment + Observability Pipeline
+
+The API exposes `/health`, `/ready`, `/metrics`, `/v1/status`, and `/v1/events`. Kubernetes probes, Prometheus scraping, Grafana dashboards, and deployment runbooks are aligned around those endpoints.
+
 ## Request Lifecycle
 
 1. Client sends an inference or evaluation request through SDK, CLI, or frontend.
@@ -35,6 +49,18 @@ AlignGPT is designed as a layered AI platform, not a single training script.
 ## Deployment Topology
 
 Development runs locally with the FastAPI gateway, lightweight core package, and file-backed configs. Staging runs containerized services with Redis, Postgres-compatible storage, Prometheus, and a mock model backend. Production adds GPU inference workers, autoscaling, ingress controls, secret management, distributed tracing, and policy-enforced artifact promotion.
+
+## Model Serving Design
+
+The serving layer is intentionally router-first. A request becomes an `InferenceRequestProfile` with task, token estimate, batch size, latency budget, capabilities, and risk level. The `GpuAwareInferenceRouter` scores available backends by health, context window, memory headroom, quantization, latency, cost, and fallback readiness. This lets AlignGPT run locally with a deterministic mock backend, stage with hosted inference, and promote to GPU-backed vLLM workers without changing the API contract.
+
+Relevant diagrams:
+
+- [Service topology](docs/diagrams/service_topology.mmd)
+- [Request lifecycle](docs/diagrams/request_lifecycle.mmd)
+- [RAG flow](docs/diagrams/rag_flow.mmd)
+- [Inference routing](docs/diagrams/inference_routing.mmd)
+- [Safety pipeline](docs/diagrams/safety_pipeline.mmd)
 
 ## Maintainability Decisions
 

@@ -1,0 +1,15 @@
+{
+  "baseline_run_id": "aligngpt-baseline-2026-05-01",
+  "current_run_id": "aligngpt-operational-2026-05-20",
+  "deltas": {
+    "hallucination": 0.03,
+    "latency": 0.06,
+    "throughput": 0.06,
+    "robustness": 0.04,
+    "bias": 0.02,
+    "adversarial": 0.03,
+    "reproducibility": 0.01
+  },
+  "regressions": [],
+  "promotion_decision": "promote-to-staging"
+}

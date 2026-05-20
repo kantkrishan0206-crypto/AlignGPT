@@ -14,3 +14,4 @@ format:
 
 benchmark:
 	python benchmarking/reproducibility/run_smoke_benchmark.py --output artifacts/benchmarks/smoke.json
+	python benchmarking/reproducibility/run_operational_benchmark.py --output-dir artifacts/benchmarks/operational

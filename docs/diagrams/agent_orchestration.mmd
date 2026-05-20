@@ -1,0 +1,11 @@
+stateDiagram-v2
+    [*] --> received
+    received --> safety_checked
+    safety_checked --> planned
+    planned --> retrieval
+    retrieval --> routed
+    routed --> model_response
+    model_response --> evaluated
+    evaluated --> completed
+    safety_checked --> blocked
+    blocked --> completed

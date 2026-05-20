@@ -1,0 +1,17 @@
+flowchart TB
+    Browser["Public Web App (Vercel)"] --> Gateway["FastAPI Gateway"]
+    SDK["Python/TypeScript SDK"] --> Gateway
+    Gateway --> Auth["Auth + Rate Limits"]
+    Auth --> Safety["Safety Policy Engine"]
+    Safety --> Pipeline["Alignment Evaluation Pipeline"]
+    Pipeline --> Retrieval["Hybrid Retrieval"]
+    Pipeline --> Router["GPU-Aware Inference Router"]
+    Router --> VLLM["vLLM GPU Worker"]
+    Router --> Hosted["Hosted Inference API"]
+    Router --> CPU["CPU Safety Fallback"]
+    Pipeline --> Metrics["Reward + Benchmark Metrics"]
+    Metrics --> Reports["Benchmark Artifacts"]
+    Gateway --> Prometheus["Prometheus Metrics"]
+    Prometheus --> Grafana["Grafana Dashboards"]
+    Gateway --> Postgres["PostgreSQL Run Store"]
+    Gateway --> Redis["Redis Cache + Events"]

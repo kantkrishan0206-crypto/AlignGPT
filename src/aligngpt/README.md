@@ -14,3 +14,6 @@ Core responsibilities:
 - `retrieval.py`: auditable in-memory retrieval contract for RAG development.
 - `service.py`: orchestration boundary combining safety, retrieval, and placeholder inference.
 - `observability.py`: structured run events and config fingerprints.
+- `router.py`: GPU-aware inference routing with fallback and microbatch decisions.
+- `alignment_pipeline.py`: runnable alignment evaluation flow from prompt to report.
+- `operational_benchmark.py`: reproducible benchmark artifact generation.

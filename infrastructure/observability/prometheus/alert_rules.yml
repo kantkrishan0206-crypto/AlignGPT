@@ -1,0 +1,17 @@
+groups:
+  - name: aligngpt-api
+    rules:
+      - alert: AlignGPTHighLatency
+        expr: aligngpt_estimated_latency_ms_max > 3000
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: AlignGPT p95 latency budget is at risk
+      - alert: AlignGPTSafetySpike
+        expr: increase(aligngpt_safety_findings_total[15m]) > 20
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: Safety findings increased sharply

@@ -27,3 +27,21 @@ jobs:
         run: ruff check src/aligngpt tests benchmarking/reproducibility cli/evaluation_cli evaluation/scientific_metrics
       - name: Tests
         run: pytest --cov=aligngpt --cov-report=term-missing
+      - name: Operational benchmark contract
+        run: python benchmarking/reproducibility/run_operational_benchmark.py --output-dir artifacts/operational-benchmark
+
+  frontend-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/web/nextjs_app/package.json
+      - name: Install frontend dependencies
+        working-directory: frontend/web/nextjs_app
+        run: npm install
+      - name: Build dashboard
+        working-directory: frontend/web/nextjs_app
+        run: npm run build

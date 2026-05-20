@@ -37,3 +37,7 @@ Example JSONL files in `data/` are toy fixtures. Production datasets must includ
 ## Safety Considerations
 
 Use policy gates, PII redaction, audit logs, access controls, benchmark regression checks, and staged deployment approvals before exposing models to users.
+
+## Evaluation Summary
+
+The current committed benchmark bundle is a deterministic operational proof run, not a claim about a trained production model. It covers hallucination, latency, throughput, robustness, bias, adversarial behavior, and reproducibility. Production model cards should replace this starter summary with results from the deployed inference backend and governed datasets.

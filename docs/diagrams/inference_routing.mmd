@@ -1,0 +1,13 @@
+flowchart TB
+    Profile["Request Profile"] --> Score["Score Backends"]
+    Score --> Capacity["GPU Memory + Context Window"]
+    Score --> Latency["Latency Budget"]
+    Score --> Health["Health + Degradation"]
+    Score --> Cost["Cost + Quantization"]
+    Capacity --> Decision["Routing Decision"]
+    Latency --> Decision
+    Health --> Decision
+    Cost --> Decision
+    Decision --> Primary["Primary Backend"]
+    Decision --> Fallback["Fallback Chain"]
+    Decision --> Microbatch["Microbatch Plan"]

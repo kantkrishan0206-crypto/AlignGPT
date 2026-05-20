@@ -1,0 +1,12 @@
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "deployment/docker/Dockerfile"
+
+[deploy]
+healthcheckPath = "/health"
+healthcheckTimeout = 30
+restartPolicyType = "ON_FAILURE"
+
+[env]
+ALIGNGPT_ENV = "production"
+ALIGNGPT_MODEL_BACKEND = "hosted"

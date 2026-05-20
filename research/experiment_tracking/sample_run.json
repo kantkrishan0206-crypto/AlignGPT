@@ -1,0 +1,20 @@
+{
+  "run_id": "aligngpt-operational-2026-05-20",
+  "config_hash": "6a8f2bc13d0e4a9e",
+  "dataset_fingerprint": "toy-fixture-v0",
+  "model_revision": "deterministic-dev-router",
+  "seed": 42,
+  "hardware": {
+    "router_backends": ["vllm-a10g-primary", "hosted-alignment-api", "cpu-safety-fallback"]
+  },
+  "metrics": {
+    "benchmark_pass_rate": 1.0,
+    "mean_suite_score": 0.8857,
+    "reward_score": 0.87
+  },
+  "artifacts": [
+    "benchmarking/results/2026-05-20/summary.json",
+    "benchmarking/results/2026-05-20/metrics.csv",
+    "benchmarking/results/2026-05-20/report.md"
+  ]
+}

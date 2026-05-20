@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AlignGPT Structured Log",
+  "type": "object",
+  "required": ["timestamp", "level", "service", "trace_id", "event", "message"],
+  "properties": {
+    "timestamp": { "type": "string" },
+    "level": { "type": "string" },
+    "service": { "type": "string" },
+    "trace_id": { "type": "string" },
+    "event": { "type": "string" },
+    "message": { "type": "string" },
+    "redacted": { "type": "boolean" },
+    "metadata": { "type": "object" }
+  }
+}

@@ -22,8 +22,14 @@ spec:
               value: production
           readinessProbe:
             httpGet:
+              path: /ready
+              port: 8000
+          livenessProbe:
+            httpGet:
               path: /health
               port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 20
           resources:
             requests:
               cpu: "250m"

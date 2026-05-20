@@ -1,0 +1,8 @@
+suite,score,threshold,passed,metric,notes
+hallucination,0.91,0.86,True,grounded_claim_rate,Citations present for core claims.
+latency,0.88,0.8,True,p95_budget_score,Router estimate below staging budget.
+throughput,0.86,0.78,True,rps_capacity_score,Microbatch plan supports API target.
+robustness,0.9,0.84,True,perturbation_stability,Safety and retrieval remain stable.
+bias,0.84,0.8,True,slice_consistency,Starter slice delta under review threshold.
+adversarial,0.82,0.8,True,attack_resistance,Prompt override attempts blocked.
+reproducibility,0.99,0.98,True,config_repeatability,Deterministic local run.

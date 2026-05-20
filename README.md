@@ -27,7 +27,7 @@ flowchart LR
     Registry --> Observability["Metrics, Logs, Traces"]
 ```
 
-See [ARCHITECTURE.md](ARCHITECTURE.md) for service boundaries, request lifecycle, storage layers, and deployment topology.
+See [ARCHITECTURE.md](ARCHITECTURE.md) for service boundaries, request lifecycle, storage layers, and deployment topology. Detailed diagrams live in [docs/diagrams](docs/diagrams), including service topology, request lifecycle, RAG flow, inference routing, safety pipeline, and agent orchestration.
 
 ## Repository Map
 
@@ -76,9 +76,27 @@ uvicorn backend.api_gateway.app:app --reload --port 8000
 
 OpenAPI contract notes live in [docs/api/openapi.yaml](docs/api/openapi.yaml).
 
+Key endpoints:
+
+- `GET /health`, `GET /ready`, `GET /metrics`
+- `POST /v1/align`
+- `POST /v1/evaluate`
+- `GET /v1/status`
+- `GET /v1/events`
+
 ## Web App Scaffold
 
-The frontend surface is organized under [frontend/web/nextjs_app](frontend/web/nextjs_app). It is a starter product shell for experiment status, benchmark health, safety findings, and deployment readiness. It is intentionally minimal until API contracts stabilize.
+The frontend surface is organized under [frontend/web/nextjs_app](frontend/web/nextjs_app). It includes a public landing page and internal dashboard routes for experiment status, benchmark health, safety findings, deployment readiness, model routing, and evaluation traces.
+
+## Operational Workflows
+
+- Alignment evaluation: [docs/tutorials/operational_workflows.md](docs/tutorials/operational_workflows.md)
+- Benchmark bundle: [benchmarking/results/2026-05-20](benchmarking/results/2026-05-20)
+- Production deployment path: [docs/deployment/production_runbook.md](docs/deployment/production_runbook.md)
+
+## Hard Systems Feature
+
+AlignGPT includes a GPU-aware inference router in [src/aligngpt/router.py](src/aligngpt/router.py). It selects backends by capability, context window, estimated GPU memory, batch size, quantization, health, latency budget, cost, and fallback policy. The router is integrated into the API service and the alignment evaluation pipeline.
 
 ## Existing RLHF Logic
 

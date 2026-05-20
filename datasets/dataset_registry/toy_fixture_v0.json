@@ -1,0 +1,19 @@
+{
+  "dataset_id": "toy-fixture",
+  "version": "0",
+  "source": "repository example data",
+  "license": "MIT-compatible example fixture",
+  "schema": {
+    "prompt": "string",
+    "response": "string optional",
+    "chosen": "string optional",
+    "rejected": "string optional"
+  },
+  "quality_checks": [
+    "jsonl_parseable",
+    "deduplicated_prompts",
+    "pii_scan_required_before_production"
+  ],
+  "pii_policy": "example data only; production data requires redaction and consent review",
+  "intended_use": "local smoke tests and deterministic benchmark examples"
+}

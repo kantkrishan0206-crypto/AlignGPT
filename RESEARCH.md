@@ -35,3 +35,7 @@ Benchmarks are grouped by scientific risk:
 ## Reproducibility
 
 Runs should record dataset fingerprint, model revision, config hash, random seed, dependency lock, hardware profile, and artifact locations. Lightweight smoke benchmarks can run in CI; GPU-heavy experiments should run in scheduled pipelines and publish summarized reports.
+
+## Operational Research Outputs
+
+The benchmark bundle under `benchmarking/results/2026-05-20` demonstrates the intended publication and release artifact shape: suite scores, thresholds, regression comparison, and narrative interpretation. Research experiments should reuse that contract so lab results can become product release gates without translation.

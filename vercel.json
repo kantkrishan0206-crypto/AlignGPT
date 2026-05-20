@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "buildCommand": "cd frontend/web/nextjs_app && npm install && npm run build",
+  "outputDirectory": "frontend/web/nextjs_app/.next",
+  "framework": "nextjs",
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://ALIGNGPT_API_HOST/:path*"
+    }
+  ]
+}

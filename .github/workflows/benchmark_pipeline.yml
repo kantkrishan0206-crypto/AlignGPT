@@ -10,7 +10,7 @@ permissions:
   actions: read
 
 jobs:
-  smoke-benchmark:
+  operational-benchmark:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -24,8 +24,10 @@ jobs:
           python -m pip install -e .
       - name: Run reproducibility smoke benchmark
         run: python benchmarking/reproducibility/run_smoke_benchmark.py --output artifacts/benchmarks/smoke.json
-      - name: Upload report
+      - name: Run operational benchmark bundle
+        run: python benchmarking/reproducibility/run_operational_benchmark.py --output-dir artifacts/benchmarks/operational
+      - name: Upload reports
         uses: actions/upload-artifact@v4
         with:
-          name: smoke-benchmark
-          path: artifacts/benchmarks/smoke.json
+          name: aligngpt-benchmark-bundle
+          path: artifacts/benchmarks

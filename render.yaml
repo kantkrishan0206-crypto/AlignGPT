@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: aligngpt-api
+    env: docker
+    plan: starter
+    dockerfilePath: deployment/docker/Dockerfile
+    healthCheckPath: /health
+    envVars:
+      - key: ALIGNGPT_ENV
+        value: production
+      - key: ALIGNGPT_MODEL_BACKEND
+        value: hosted
+      - key: ALIGNGPT_SECRET_KEY
+        sync: false
+      - key: ALIGNGPT_DATABASE_URL
+        sync: false
+      - key: ALIGNGPT_REDIS_URL
+        sync: false

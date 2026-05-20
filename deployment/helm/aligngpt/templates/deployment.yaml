@@ -17,5 +17,13 @@ spec:
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           ports:
             - containerPort: 8000
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8000
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
           resources:
 {{ toYaml .Values.resources | indent 12 }}

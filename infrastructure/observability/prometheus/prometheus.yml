@@ -2,5 +2,8 @@ global:
   scrape_interval: 15s
 scrape_configs:
   - job_name: aligngpt-api
+    metrics_path: /metrics
     static_configs:
       - targets: ["aligngpt-api:8000"]
+rule_files:
+  - alert_rules.yml
